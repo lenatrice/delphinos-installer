@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "qpainter": "cpp",
+        "qmouseevent": "cpp",
+        "qpainterpath": "cpp"
+    }
+}

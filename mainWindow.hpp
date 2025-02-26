@@ -16,6 +16,9 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 
+class MainWindow;
+class WindowContent;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -27,11 +30,6 @@ public:
     int screenHeight = screenGeometry.height();
     int screenWidth = screenGeometry.width();
 
-private slots:
-    void onBackClicked();
-    void onNextClicked();
-    void checkCurrentPage();
-
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -39,16 +37,36 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private: 
+    WindowContent* content;
+    QPoint dragPosition;
+    bool dragging = false;
+};
+
+class WindowContent : public QWidget
+{
+Q_OBJECT
+
+public:
+    WindowContent(MainWindow* parent);
+
+    MainWindow* parent; 
+
     int currentPage = 1;
     int lastPage = currentPage;
     const int maxPages = 4;
-    
-    bool dragging = false;
-    QPoint dragPosition;
 
-    QLabel *pageTitle;
+    QLabel *title;
+    QLabel *description;
+
     QPushButton *buttonBack;
     QPushButton *buttonNext;
+
+private slots:
+    void checkCurrentPage();
+    void onBackClicked();
+    void onNextClicked();
+
 };
+
 
 #endif //MAINWINDOW_H
