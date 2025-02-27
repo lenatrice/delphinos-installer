@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/usr/include/qt6/QtCore",
+                "/usr/include/qt6"
             ],
             "defines": [],
             "configurationProvider": "ms-vscode.makefile-tools"

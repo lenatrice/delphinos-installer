@@ -1,39 +1,6 @@
 #include "mainWindow.hpp"
-
-WindowContent::WindowContent(MainWindow* parent) : QWidget(parent)
-{
-    // Parent
-    this->parent = parent;
-
-    // Title
-    title = new QLabel("Seja bem vindo ao instalador do DelphinOS", this);
-    title->setGeometry(0, 10, parent->width(), 32);
-    title->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    title->setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
-
-    // Description
-    description = new QLabel("Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável. Esse instalador irá lhe guiar por todas as etapas da instalação. Clique em próximo para avancar para iniciar a primeira etapa.", this);
-    description->setWordWrap(true);
-    description->setGeometry(10, title->y()+title->height()+10, parent->width()-10, parent->height()-10);
-    description->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    description->setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
-
-    // Next button
-    buttonNext = new QPushButton("Avançar", this);
-    buttonNext->setGeometry(parent->width() - 90, parent->height() - 50, 80, 40);
-
-    // Back button
-    buttonBack = new QPushButton("Voltar", this);
-    buttonBack->setGeometry(buttonNext->x() - buttonNext->width() - 10, parent->height() - 50, 80, 40);
-
-    connect(buttonBack, &QPushButton::clicked, this, &WindowContent::onBackClicked);
-    connect(buttonNext, &QPushButton::clicked, this, &WindowContent::onNextClicked);
-
-
-    QTimer* pageLoop = new QTimer(this);
-    connect(pageLoop, &QTimer::timeout, this, &WindowContent::checkCurrentPage);
-    pageLoop->start(50);
-};
+#include "keymapSearch.hpp"
+#include <cstdlib>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -41,9 +8,162 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     this->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     this->setAttribute(Qt::WA_TranslucentBackground);
 
-    content = new WindowContent(this);
-    setCentralWidget(content);
+    QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+
+    // Window layout
+    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+
+
+    // Page content
+    page = new QStackedWidget(this);
+    pageContent1 = pageCreateLocalization();
+    pageContent2 = pageCreatePartition();
+    page->addWidget(pageContent1);
+    page->addWidget(pageContent2);
+    page->setCurrentIndex(0);
+
+    mainLayout->addWidget(page);
+
+    // Navigation buttons
+    QWidget * navigationWidget = new QWidget(this);
+    QHBoxLayout * navigationButtonLayout = new QHBoxLayout(navigationWidget);
+
+    buttonBack = new QPushButton("Voltar", this);
+    navigationButtonLayout->addWidget(buttonBack);
+
+    buttonNext = new QPushButton("Avançar", this);
+    navigationButtonLayout->addWidget(buttonNext);
+
+    navigationButtonLayout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+
+    mainLayout->addWidget(navigationWidget);
+
+
+    connect(buttonBack, &QPushButton::clicked, this, &MainWindow::onBackClicked);
+    connect(buttonNext, &QPushButton::clicked, this, &MainWindow::onNextClicked);
+};
+
+QWidget * MainWindow::pageCreateLocalization()
+{
+    std::cout << "Running pageCreateLocalization()" << std::endl;
+    listLayoutVariants("br");
+    std::cout << getLayoutCode("Português (Brasil)").toStdString() << std::endl;
+
+    QWidget *page = new QWidget(this);
+    QVBoxLayout *pageLayout = new QVBoxLayout(page);
+
+    PageTitle* title = new PageTitle("Seja bem vindo ao instalador do DelphinOS", this);
+    pageLayout->addWidget(title);
+    
+    PageDescription* description = new PageDescription("Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável. \
+Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário, e clique em próximo para avançar para a próxima etapa.", this);
+    pageLayout->addWidget(description);
+
+    // Language option
+    QWidget* localizationFormWidget = new QWidget(this);
+    QFormLayout* localizationFormLayout = new QFormLayout(localizationFormWidget);
+
+    QComboBox* optionLanguageCombobox = new QComboBox(this);
+    optionLanguageCombobox->addItem("Português");
+    optionLanguageCombobox->addItem("English");
+
+    // Keyboard layout and variant options
+    QHBoxLayout* keymapOptionsLayout = new QHBoxLayout();
+    QComboBox* optionKeymapLayoutCombobox = new QComboBox(this);
+    populateKeymapLayouts(optionKeymapLayoutCombobox);
+
+
+    QComboBox* optionKeymapVariantCombobox = new QComboBox(this);
+    updateVariants(optionKeymapLayoutCombobox, optionKeymapVariantCombobox);
+    connect(optionKeymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+        [this, optionKeymapLayoutCombobox, optionKeymapVariantCombobox](const int)
+        {
+            updateVariants(optionKeymapLayoutCombobox, optionKeymapVariantCombobox);
+        }
+    );
+
+
+    keymapOptionsLayout->addWidget(optionKeymapLayoutCombobox);
+    keymapOptionsLayout->addWidget(optionKeymapVariantCombobox);
+
+    QComboBox* optionTimezoneCombobox = new QComboBox(this);
+    optionTimezoneCombobox->addItem("São Paulo (GMT-3)");
+
+    localizationFormLayout->addRow("Idioma:", optionLanguageCombobox);
+    localizationFormLayout->addRow("Layout do teclado:", keymapOptionsLayout);
+    localizationFormLayout->addRow("Fuso-horário:", optionTimezoneCombobox);
+
+    pageLayout->addWidget(localizationFormWidget);
+
+    return page;
+};
+
+void MainWindow::populateKeymapLayouts(QComboBox* optionKeymapLayoutCombobox)
+{
+    std::string layoutsPath = "/usr/share/X11/xkb/symbols/";
+    QStringList layoutList;
+    for (const auto &file : std::filesystem::directory_iterator(layoutsPath))
+    {
+        std::string layoutFilename = file.path().filename();
+        QString layoutFilenameQStr = QString::fromStdString(layoutFilename);
+        if (getLayoutName(layoutFilenameQStr) != layoutFilenameQStr) {
+            layoutList << getLayoutName(layoutFilenameQStr);
+        }
+        layoutList.sort(Qt::CaseInsensitive);
+    }
+    optionKeymapLayoutCombobox->addItems(layoutList);
 }
+
+void MainWindow::updateVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
+{
+    QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
+
+    std::cout << "Updating variants for layout: " << layoutCode.toStdString() << std::endl;
+
+    QStringList keymapVariantList = listLayoutVariants(layoutCode.toStdString());
+    keymapVariantCombobox->clear();
+
+    for (QString iterator : keymapVariantList)
+    {
+        keymapVariantCombobox->addItem(getVariantName(iterator));
+    }
+
+    QString defaultKeymapVariant = getKeymapLayoutDefaultVariant(layoutCode);
+
+    if (keymapVariantCombobox->findText(defaultKeymapVariant) != -1)
+    {
+        keymapVariantCombobox->setCurrentText(defaultKeymapVariant);
+        std::cout << "Default keyboard variant: " << getKeymapLayoutDefaultVariant(layoutCode).toStdString() << std::endl;
+    } else {
+        std::cout << "Default keyboard layout variant not found." << getKeymapLayoutDefaultVariant(layoutCode).toStdString() << std::endl;
+    }
+
+
+    return;
+}
+
+
+QWidget * MainWindow::pageCreatePartition()
+{
+    QWidget *page = new QWidget(this);
+    QVBoxLayout *pageLayout = new QVBoxLayout(page);
+    pageLayout->setSpacing(0);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+
+    std::cout << "Running pageCreatePartition()" << std::endl;
+
+    PageTitle* title = new PageTitle(this);
+    pageLayout->addWidget(title);
+
+    PageDescription* description = new PageDescription(this);
+    pageLayout->addWidget(description);
+
+    title->setText("Configurar partições para o sistema");
+    description->setText("Nessa etapa iremos criar as partições que serão usadas pelo sistema ou selecionar partições já existentes.");
+
+    return page;
+};
 
 // Custom window background 
 
@@ -69,7 +189,7 @@ void MainWindow::paintEvent(QPaintEvent* event)
 
 void MainWindow::mousePressEvent(QMouseEvent* event)
 {
-    int dragAreaHeight = this->content->title->height() + this->content->title->y();
+    int dragAreaHeight = 78;
 
     if (event->button() == Qt::LeftButton && event->pos().y() <= dragAreaHeight)
     {
@@ -109,52 +229,25 @@ void MainWindow::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-// Page checking procedure
-
-void WindowContent::checkCurrentPage()
-{
-    if (lastPage != currentPage)
-    {    
-        if (currentPage > 1)
-        {
-            buttonBack->setEnabled(true);
-        }
-        else
-        {
-            buttonBack->setEnabled(false);
-        }
-
-        if (currentPage==maxPages)
-        {
-            buttonNext->setText("Finalizar");
-        }
-        else
-        {
-            buttonNext->setText("Avançar");
-        }
-
-        title->setText("Página " + QString::number(currentPage));
-        lastPage = currentPage;
-    }
-}
-
 // Window buttons functions
 
-void WindowContent::onBackClicked()
+void MainWindow::onBackClicked()
 {
     if (currentPage > 1)
     {
         currentPage--;
+        page->setCurrentIndex(currentPage-1);
     }
 }
 
-void WindowContent::onNextClicked()
+void MainWindow::onNextClicked()
 {
     if (currentPage < maxPages)
     {
         currentPage++;
+        page->setCurrentIndex(currentPage-1);
     } else
     {
-        parent->close();
+        close();
     }
 }

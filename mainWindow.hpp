@@ -15,6 +15,12 @@
 #include <QBrush>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QComboBox>
+#include <QListView>
+#include <QStackedWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QFormLayout>
 
 class MainWindow;
 class WindowContent;
@@ -37,36 +43,75 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private: 
-    WindowContent* content;
+    QStackedWidget *page;
+    QWidget *pageContent1;
+    QWidget *pageContent2;
+
+    QWidget *pageCreateLocalization();
+    QWidget *pageCreatePartition();
+
+    void populateKeymapLayouts(QComboBox* keymapLayoutCombobox);
+
+    
     QPoint dragPosition;
     bool dragging = false;
-};
-
-class WindowContent : public QWidget
-{
-Q_OBJECT
 
 public:
-    WindowContent(MainWindow* parent);
-
-    MainWindow* parent; 
-
     int currentPage = 1;
-    int lastPage = currentPage;
-    const int maxPages = 4;
-
-    QLabel *title;
-    QLabel *description;
+    int maxPages=2;
 
     QPushButton *buttonBack;
     QPushButton *buttonNext;
 
-private slots:
-    void checkCurrentPage();
-    void onBackClicked();
-    void onNextClicked();
 
+private slots:
+    //void pageShowNext();
+    //void pageShowPrevious();
+    void onNextClicked();
+    void onBackClicked();
+    void updateVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
 };
 
+struct PageTitle : public QLabel
+{
+    explicit PageTitle(QWidget* parent = nullptr) : QLabel(parent) {
+        setWordWrap(true);
+        setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");    
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
+
+    explicit PageTitle(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
+        setWordWrap(true);
+        setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
+        setText(text);
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
+};
+
+struct PageDescription : public QLabel
+{
+    explicit PageDescription(QWidget* parent = nullptr) : QLabel(parent) {
+        setWordWrap(true);
+        setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
+    explicit PageDescription(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
+        setWordWrap(true);
+        setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setText(text);
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
+};
+
+struct PageContent : public QWidget
+{
+    PageTitle title;
+    PageDescription description;
+    QVBoxLayout *pageLayout;
+};
 
 #endif //MAINWINDOW_H
