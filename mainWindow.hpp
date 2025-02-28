@@ -51,6 +51,7 @@ private:
     QWidget *pageCreatePartition();
 
     void populateKeymapLayouts(QComboBox* keymapLayoutCombobox);
+    void populateTimezones(QComboBox* keymapLayoutCombobox);
 
     
     QPoint dragPosition;
@@ -69,7 +70,11 @@ private slots:
     //void pageShowPrevious();
     void onNextClicked();
     void onBackClicked();
-    void updateVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
+    void updateLayoutAndVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
+    void updateVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
+    void updateTimezone(QComboBox* timezoneCombobox, int timezoneComboboxIndex);
+
+private: bool keymapLayoutChanged = false;
 };
 
 struct PageTitle : public QLabel
@@ -94,13 +99,13 @@ struct PageDescription : public QLabel
 {
     explicit PageDescription(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
-        setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        setAlignment(Qt::AlignHCenter | Qt::AlignTop);
         setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
     explicit PageDescription(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
-        setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        setAlignment(Qt::AlignHCenter | Qt::AlignTop);
         setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
