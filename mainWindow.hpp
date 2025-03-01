@@ -22,15 +22,12 @@
 #include <QHBoxLayout>
 #include <QFormLayout>
 
-class MainWindow;
-class WindowContent;
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     const QScreen* screen = QGuiApplication::primaryScreen();
     const QRect screenGeometry = screen->geometry();
     int screenHeight = screenGeometry.height();
@@ -38,40 +35,38 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 private: 
-    QStackedWidget *page;
-    QWidget *pageContent1;
-    QWidget *pageContent2;
+    QStackedWidget* page;
+    QWidget* pageContent[3];
 
-    QWidget *pageCreateLocalization();
-    QWidget *pageCreatePartition();
+    QWidget* pageCreateLocalization();
+    QWidget* pageCreateNetwork();
+    const int networkDevicePathRole = Qt::UserRole;
+    const int networkDeviceTypeRole = Qt::UserRole + 1;
+
+    QWidget* pageCreatePartition();
 
     void populateKeymapLayouts(QComboBox* keymapLayoutCombobox);
     void populateTimezones(QComboBox* keymapLayoutCombobox);
 
-    
     QPoint dragPosition;
     bool dragging = false;
 
 public:
-    int currentPage = 1;
-    int maxPages=2;
-
-    QPushButton *buttonBack;
-    QPushButton *buttonNext;
-
+    QPushButton* buttonBack;
+    QPushButton* buttonNext;
 
 private slots:
     //void pageShowNext();
     //void pageShowPrevious();
     void onNextClicked();
     void onBackClicked();
-    void updateLayoutAndVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
-    void updateVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
+    void updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
+    void updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
     void updateTimezone(QComboBox* timezoneCombobox, int timezoneComboboxIndex);
 
 private: bool keymapLayoutChanged = false;
@@ -82,8 +77,9 @@ struct PageTitle : public QLabel
     explicit PageTitle(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");    
+        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        setMaximumHeight(sizeHint().height());
     }
 
     explicit PageTitle(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
@@ -92,6 +88,7 @@ struct PageTitle : public QLabel
         setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        setMaximumHeight(sizeHint().height());
     }
 };
 
@@ -112,11 +109,44 @@ struct PageDescription : public QLabel
     }
 };
 
-struct PageContent : public QWidget
+
+class WindowPage : public QWidget
 {
-    PageTitle title;
-    PageDescription description;
-    QVBoxLayout *pageLayout;
+    QVBoxLayout* layout;
+    PageTitle* title;
+    PageDescription* description; 
+
+public:
+    WindowPage(const QString& _title, const QString& _description)
+    {
+        layout = new QVBoxLayout(this);
+
+        title = new PageTitle(_title);
+        layout->addWidget(title);
+
+        description = new PageDescription(_description, this);
+        layout->addWidget(description);
+
+        layout->setAlignment(Qt::AlignTop);
+
+        this->show();
+    }
+
+    void setTitle(const QString& _title)
+    {
+        title->setText(_title);
+    }
+
+    void setDescription(const QString& _description)
+    {
+        description->setText(_description);
+    }
+
+    void addWidget(QWidget* widget)
+    {
+        layout->addWidget(widget, 0, Qt::AlignTop);
+    }
+
 };
 
 #endif //MAINWINDOW_H

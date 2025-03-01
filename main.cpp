@@ -4,7 +4,8 @@
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
-    QFont font("GNU Unifont");
+
+    QFont font("DeJavu Sans");
     app.setFont(font);
 
     MainWindow window;

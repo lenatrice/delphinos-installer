@@ -8,10 +8,14 @@
                 "/usr/include/qt6",
                 "/usr/include/qt6/QtWidgets",
                 "/usr/include/qt/QtWidgets",
-                "/usr/include/qt6/QtGui"
+                "/usr/include/qt6/QtGui",
+                "/usr/include/glib-2.0",
+                "/usr/include/libnm",
+                "/usr/include/qt/QtDBus"
             ],
             "defines": [],
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "configurationProvider": "ms-vscode.makefile-tools",
+            "compilerPath": "/usr/bin/gcc"
         }
     ],
     "version": 4

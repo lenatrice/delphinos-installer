@@ -1,31 +1,49 @@
 #include "mainWindow.hpp"
 #include "keymapSearch.hpp"
+#include "timezones.hpp"
+#include "network.hpp"
 #include <cstdlib>
 #include <unistd.h>
-#include <QLineEdit>
 #include <vector>
-#include <wait.h>
-#include <timezones.hpp>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QListWidgetItem>
+
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusReply>
+#include <QDebug>
+
+#ifdef signals
+#undef signals
+#endif
+
+#include <glib.h>
+#include <NetworkManager.h>
+
+#define signals Q_SIGNALs
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    this->resize(640, 480);
-    this->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
-    this->setAttribute(Qt::WA_TranslucentBackground);
+    setFixedSize(640, 480);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    setAttribute(Qt::WA_TranslucentBackground);
 
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
     // Window layout
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
-
+    mainLayout->setAlignment(Qt::AlignTop);
 
     // Page content
     page = new QStackedWidget(this);
-    pageContent1 = pageCreateLocalization();
-    pageContent2 = pageCreatePartition();
-    page->addWidget(pageContent1);
-    page->addWidget(pageContent2);
+    pageContent[0] = pageCreateLocalization();
+    pageContent[1] = pageCreateNetwork();
+    pageContent[2] = pageCreatePartition();
+    page->addWidget(pageContent[0]);
+    page->addWidget(pageContent[1]);
+    page->addWidget(pageContent[2]);
     page->setCurrentIndex(0);
 
     mainLayout->addWidget(page);
@@ -49,80 +67,91 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(buttonNext, &QPushButton::clicked, this, &MainWindow::onNextClicked);
 };
 
-QWidget * MainWindow::pageCreateLocalization()
+QWidget* MainWindow::pageCreateLocalization()
 {
-    std::cout << "Running pageCreateLocalization()" << std::endl;
+    WindowPage* page = new WindowPage(
+        "Seja bem vindo ao instalador do DelphinOS",
+        "Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável.\
+Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário\
+e clique em próximo para avançar para a próxima etapa."
+    );
 
-    QWidget *page = new QWidget(this);
-    QVBoxLayout *pageLayout = new QVBoxLayout(page);
-
-    PageTitle* title = new PageTitle("Seja bem vindo ao instalador do DelphinOS", this);
-    pageLayout->addWidget(title);
-    
-    PageDescription* description = new PageDescription("Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável. \
-Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário, e clique em próximo para avançar para a próxima etapa.", this);
-    pageLayout->addWidget(description);
-
-    // Language option
     QWidget* localizationFormWidget = new QWidget(this);
     QFormLayout* localizationFormLayout = new QFormLayout(localizationFormWidget);
+    localizationFormLayout->setHorizontalSpacing(25); 
 
-    QComboBox* optionLanguageCombobox = new QComboBox(this);
-    optionLanguageCombobox->addItem("Português");
-    optionLanguageCombobox->addItem("English");
+    // Language option
+    QComboBox* languageOptionCombobox = new QComboBox(this);
+    languageOptionCombobox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    languageOptionCombobox->addItem("Português");
+    languageOptionCombobox->addItem("English");
 
     // Keyboard layout and variant options
-    QHBoxLayout* keymapOptionsLayout = new QHBoxLayout();
-    QComboBox* optionKeymapLayoutCombobox = new QComboBox(this);
-    populateKeymapLayouts(optionKeymapLayoutCombobox);
+    QHBoxLayout* keymapOptionLayout = new QHBoxLayout();
+    QComboBox* keymapLayoutCombobox = new QComboBox(this);
+    populateKeymapLayouts(keymapLayoutCombobox);
 
-    QComboBox* optionKeymapVariantCombobox = new QComboBox(this);
+    QComboBox* keymapVariantCombobox = new QComboBox(this);
 
-    updateLayoutAndVariants(optionKeymapLayoutCombobox, optionKeymapVariantCombobox);
-    connect(optionKeymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, optionKeymapLayoutCombobox, optionKeymapVariantCombobox](const int)
+    updateKeymapLayout(keymapLayoutCombobox, keymapVariantCombobox);
+    connect(keymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+        [this, keymapLayoutCombobox, keymapVariantCombobox](const int)
         {
             keymapLayoutChanged = true;
-            updateLayoutAndVariants(optionKeymapLayoutCombobox, optionKeymapVariantCombobox);
+            updateKeymapLayout(keymapLayoutCombobox, keymapVariantCombobox);
             keymapLayoutChanged = false;
         }
     );
-    connect(optionKeymapVariantCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, optionKeymapLayoutCombobox, optionKeymapVariantCombobox](const int)
+    connect(keymapVariantCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+        [this, keymapLayoutCombobox, keymapVariantCombobox](const int)
         {
             if (!keymapLayoutChanged) {
-                updateVariant(optionKeymapLayoutCombobox, optionKeymapVariantCombobox);
+                updateKeymapVariant(keymapLayoutCombobox, keymapVariantCombobox);
             }
         }
     );
 
-    QLineEdit* keymapTest = new QLineEdit;
+    QLineEdit* keymapTestBox = new QLineEdit;
 
-    keymapOptionsLayout->addWidget(optionKeymapLayoutCombobox);
-    keymapOptionsLayout->addWidget(optionKeymapVariantCombobox);
+    keymapOptionLayout->addWidget(keymapLayoutCombobox);
+    keymapOptionLayout->addWidget(keymapVariantCombobox);
 
     // Timezone options
-    QComboBox* optionTimezoneCombobox = new QComboBox(this);
-    populateTimezones(optionTimezoneCombobox);
-    optionTimezoneCombobox->property("placeholderRemoved").toBool();
-    optionTimezoneCombobox->setProperty("placeholderRemoved", false);
-    connect(optionTimezoneCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, optionTimezoneCombobox](const int optionTimezoneComboboxIndex)
+    QComboBox* timezoneCombobox = new QComboBox(this);
+    populateTimezones(timezoneCombobox);
+    timezoneCombobox->property("placeholderRemoved").toBool();
+    timezoneCombobox->setProperty("placeholderRemoved", false);
+    connect(timezoneCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+        [this, timezoneCombobox](const int timezoneComboboxIndex)
         {
-            MainWindow::updateTimezone(optionTimezoneCombobox, optionTimezoneComboboxIndex);
+            MainWindow::updateTimezone(timezoneCombobox, timezoneComboboxIndex);
         }
     );
-    localizationFormLayout->addRow("Idioma:", optionLanguageCombobox);
-    localizationFormLayout->addRow("Layout do teclado:", keymapOptionsLayout);
-    localizationFormLayout->addRow("Teste do teclado:", keymapTest);
-    localizationFormLayout->addRow("Fuso-horário:", optionTimezoneCombobox);
 
-    pageLayout->addWidget(localizationFormWidget);
+    QLabel* languageOptionLabel = new QLabel("Idioma:");
+    languageOptionLabel->setMinimumWidth(languageOptionLabel->sizeHint().width());
+
+    QLabel* keymapOptionLabel = new QLabel("Layout do teclado:");
+    keymapOptionLabel->setMinimumWidth(keymapOptionLabel->sizeHint().width());
+
+    QLabel* keymapTestLabel = new QLabel("Teste do teclado:");
+    keymapTestLabel->setMinimumWidth(keymapTestLabel->sizeHint().width());
+
+    QLabel* timezoneOptionLabel = new QLabel("Fuso-horário:");
+    timezoneOptionLabel->setMinimumWidth(timezoneOptionLabel->sizeHint().width());
+
+    localizationFormLayout->addRow(languageOptionLabel, languageOptionCombobox);
+    localizationFormLayout->addRow(keymapOptionLabel, keymapOptionLayout);
+    localizationFormLayout->addRow(keymapTestLabel, keymapTestBox);
+    localizationFormLayout->addRow(timezoneOptionLabel, timezoneCombobox);
+
+
+    page->addWidget(localizationFormWidget);
 
     return page;
 };
 
-void MainWindow::populateKeymapLayouts(QComboBox* optionKeymapLayoutCombobox)
+void MainWindow::populateKeymapLayouts(QComboBox* keymapOptionCombobox)
 {
     std::string layoutsPath = "/usr/share/X11/xkb/symbols/";
     QStringList layoutList;
@@ -135,21 +164,21 @@ void MainWindow::populateKeymapLayouts(QComboBox* optionKeymapLayoutCombobox)
         }
         layoutList.sort(Qt::CaseInsensitive);
     }
-    optionKeymapLayoutCombobox->addItems(layoutList);
+    keymapOptionCombobox->addItems(layoutList);
     std::string currentKeymapLayout = getCurrentKeymapLayout();
     if (!currentKeymapLayout.empty())
     {
         std::cout << "Current keymap layout in use: " << currentKeymapLayout.c_str() << std::endl;
-        if (optionKeymapLayoutCombobox->findText(getLayoutName(QString::fromStdString(currentKeymapLayout))))
+        if (keymapOptionCombobox->findText(getLayoutName(QString::fromStdString(currentKeymapLayout))))
         {
-            optionKeymapLayoutCombobox->setCurrentText(getLayoutName(QString::fromStdString(currentKeymapLayout)));
+            keymapOptionCombobox->setCurrentText(getLayoutName(QString::fromStdString(currentKeymapLayout)));
         }
     } else { 
         std::cout << "Current keymap layout could not be determined." << std::endl;
     }
 }
 
-void MainWindow::updateLayoutAndVariants(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
+void MainWindow::updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
 {
     QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
 
@@ -179,7 +208,7 @@ void MainWindow::updateLayoutAndVariants(QComboBox* keymapLayoutCombobox, QCombo
     return;
 }
 
-void MainWindow::updateVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
+void MainWindow::updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
 {
     QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
     QString variantCode = getVariantCode(keymapVariantCombobox->currentText());
@@ -221,29 +250,89 @@ void MainWindow::updateTimezone(QComboBox* timezoneCombobox, int index)
     system("qt-sudo timedatectl set-timezone Etc/" + selectedTimezone.toUtf8());
 };
 
-QWidget * MainWindow::pageCreatePartition()
+QWidget* MainWindow::pageCreateNetwork()
 {
-    QWidget *page = new QWidget(this);
-    QVBoxLayout *pageLayout = new QVBoxLayout(page);
-    pageLayout->setSpacing(0);
-    pageLayout->setContentsMargins(0, 0, 0, 0);
+    WindowPage* page = new WindowPage(
+        "Configurar conexão de rede",
+        "Selecione a rede que deseja utilizar para instalar o sistema."
+    );
 
-    std::cout << "Running pageCreatePartition()" << std::endl;
+    QDBusInterface dbusInterface("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager", "org.freedesktop.NetworkManager", QDBusConnection::systemBus());
 
-    PageTitle* title = new PageTitle(this);
-    pageLayout->addWidget(title);
+    if (!dbusInterface.isValid())
+    {
+        qCritical() << "Failed to connect to D-Bus: " << QDBusConnection::systemBus().lastError().message();
+        return page;
+    }
 
-    PageDescription* description = new PageDescription(this);
-    pageLayout->addWidget(description);
+    QDBusReply<QList<QDBusObjectPath>> dbusReply = dbusInterface.call("GetAllDevices");
 
-    title->setText("Configurar partições para o sistema");
-    description->setText("Nessa etapa iremos criar as partições que serão usadas pelo sistema ou selecionar partições já existentes.");
+    if (!dbusReply.isValid())
+    {
+        qCritical() << "Failed to call D-Bus method: " << dbusReply.error().message();
+        return page;
+    }
+
+    QList<QDBusObjectPath> dbusDevices = dbusReply.value();
+
+    qDebug() << "Found D-Bus devices:";
+
+    QWidget* networkFormWidget = new QWidget(this);
+    QFormLayout* networkFormLayout = new QFormLayout(networkFormWidget);
+    networkFormLayout->setAlignment(Qt::AlignTop);
+
+    QListWidget* networkDeviceList = new QListWidget(this);
+    networkDeviceList->setMaximumHeight(120);
+    networkFormLayout->addRow("Dispositivos de rede: ", networkDeviceList);
+
+    for (const QDBusObjectPath& dbusDevicePath : dbusDevices)
+    {
+        QDBusInterface dbusDeviceInterface("org.freedesktop.NetworkManager", dbusDevicePath.path(), "org.freedesktop.DBus.Properties", QDBusConnection::systemBus());
+        QDBusReply<QVariant> dbusDeviceReply = dbusDeviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "Interface");
+        if (dbusDeviceReply.isValid())
+        {
+            QString deviceName = dbusDeviceReply.value().toString();
+            QDBusReply<QVariant> deviceTypeReply = dbusDeviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "DeviceType");
+            if (deviceTypeReply.isValid())
+            {
+                int deviceType = deviceTypeReply.value().toInt();
+                deviceName += " (" + networkTypeMap.value(deviceType, "Unknown") + ")";
+            } else {
+                qWarning() << "Coult not determine type of device " << deviceName << ": " << deviceTypeReply.error().message();
+            }
+
+            QListWidgetItem* newDevice = new QListWidgetItem(deviceName);
+            newDevice->setData(networkDevicePathRole, dbusDevicePath.path());
+            networkDeviceList->addItem(newDevice);
+        } else {
+            qCritical() << "Failed to get device type for path " << dbusDevicePath.path() << ":" << dbusDeviceReply.error().message();
+        }
+    }
+
+    connect(networkDeviceList, &QListWidget::currentItemChanged, [this](QListWidgetItem* item) {
+            QString dbusPath = item->data(networkDevicePathRole).toString();
+            qDebug() << "Selected device D-Bus path: " << dbusPath;
+        }
+    );
+
+
+
+    page->addWidget(networkFormWidget);
+
+    return page;
+};
+
+QWidget* MainWindow::pageCreatePartition()
+{
+    WindowPage* page = new WindowPage(
+        "Configurar partições para o sistema",
+        "Nessa etapa iremos criar as partições que serão usadas pelo sistema ou selecionar partições já existentes."
+    );
 
     return page;
 };
 
 // Custom window background 
-
 void MainWindow::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
@@ -263,10 +352,9 @@ void MainWindow::paintEvent(QPaintEvent* event)
 }
 
 // Allows Mouse to drag window on the top
-
 void MainWindow::mousePressEvent(QMouseEvent* event)
 {
-    int dragAreaHeight = 78;
+    int dragAreaHeight = 64;
 
     if (event->button() == Qt::LeftButton && event->pos().y() <= dragAreaHeight)
     {
@@ -310,19 +398,17 @@ void MainWindow::mouseReleaseEvent(QMouseEvent* event)
 
 void MainWindow::onBackClicked()
 {
-    if (currentPage > 1)
+    if (page->currentIndex() > 0)
     {
-        currentPage--;
-        page->setCurrentIndex(currentPage-1);
+        page->setCurrentIndex(page->currentIndex()-1);
     }
 }
 
 void MainWindow::onNextClicked()
 {
-    if (currentPage < maxPages)
+    if (page->currentIndex() != page->count() - 1)
     {
-        currentPage++;
-        page->setCurrentIndex(currentPage-1);
+        page->setCurrentIndex(page->currentIndex()+1);
     } else
     {
         close();
