@@ -10,10 +10,6 @@
 #include <QGuiApplication>
 #include <QLabel>
 #include <QTimer>
-#include <QPainter>
-#include <QPen>
-#include <QBrush>
-#include <QPainterPath>
 #include <QMouseEvent>
 #include <QComboBox>
 #include <QListView>
@@ -21,6 +17,9 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QTranslator>
 
 class MainWindow : public QMainWindow
 {
@@ -44,32 +43,39 @@ private:
     QWidget* pageContent[3];
 
     QWidget* pageCreateLocalization();
+    bool keymapLayoutChanged = false;
+
     QWidget* pageCreateNetwork();
     const int networkDevicePathRole = Qt::UserRole;
     const int networkDeviceTypeRole = Qt::UserRole + 1;
+    const int wifiAccessPointNameRole = Qt::UserRole;
+    const int wifiAccessPointPathRole = Qt::UserRole + 1;
 
     QWidget* pageCreatePartition();
 
     void populateKeymapLayouts(QComboBox* keymapLayoutCombobox);
     void populateTimezones(QComboBox* keymapLayoutCombobox);
+    void populateNetworkDevices(QFormLayout* networkFormLayout, QListWidget* networkDeviceList, QListWidget* wifiAccessPointList);
 
     QPoint dragPosition;
     bool dragging = false;
 
-public:
     QPushButton* buttonBack;
     QPushButton* buttonNext;
 
 private slots:
-    //void pageShowNext();
-    //void pageShowPrevious();
     void onNextClicked();
     void onBackClicked();
+
+    // Localization slots
+    void updateLanguage();
     void updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
     void updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
     void updateTimezone(QComboBox* timezoneCombobox, int timezoneComboboxIndex);
 
-private: bool keymapLayoutChanged = false;
+    // Network slots
+    void updateNetworkDevice(QFormLayout* networkFormLayout, QListWidgetItem* networkDeviceItem, QListWidget* wifiAccessPointsList);
+    void connectNetwork(QListWidgetItem* networkDeviceItem, QListWidgetItem* wifiAccessPointItem);
 };
 
 struct PageTitle : public QLabel
@@ -77,7 +83,7 @@ struct PageTitle : public QLabel
     explicit PageTitle(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
+        setStyleSheet("font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         setMaximumHeight(sizeHint().height());
     }
@@ -85,7 +91,7 @@ struct PageTitle : public QLabel
     explicit PageTitle(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet(" font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
+        setStyleSheet("font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         setMaximumHeight(sizeHint().height());
@@ -97,13 +103,13 @@ struct PageDescription : public QLabel
     explicit PageDescription(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setStyleSheet("font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
     explicit PageDescription(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet(" font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setStyleSheet("font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }

@@ -53,9 +53,13 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = main.cpp \
-		mainWindow.cpp moc_mainWindow.cpp
+		mainWindow.cpp \
+		localizationPage.cpp \
+		networkPage.cpp moc_mainWindow.cpp
 OBJECTS       = main.o \
 		mainWindow.o \
+		localizationPage.o \
+		networkPage.o \
 		moc_mainWindow.o
 DIST          = /usr/lib/qt/mkspecs/features/spec_pre.prf \
 		/usr/lib/qt/mkspecs/common/unix.conf \
@@ -198,7 +202,9 @@ DIST          = /usr/lib/qt/mkspecs/features/spec_pre.prf \
 		/usr/lib/qt/mkspecs/features/yacc.prf \
 		/usr/lib/qt/mkspecs/features/lex.prf \
 		Makefile.pro mainWindow.hpp main.cpp \
-		mainWindow.cpp
+		mainWindow.cpp \
+		localizationPage.cpp \
+		networkPage.cpp
 QMAKE_TARGET  = delphinos-installer
 DESTDIR       = 
 TARGET        = delphinos-installer
@@ -509,7 +515,7 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/qt/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents mainWindow.hpp $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp mainWindow.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp mainWindow.cpp localizationPage.cpp networkPage.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -568,11 +574,17 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean
 main.o: main.cpp mainWindow.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
-mainWindow.o: mainWindow.cpp mainWindow.hpp \
-		keymapSearch.hpp \
-		timezones.hpp \
-		network.hpp
+mainWindow.o: mainWindow.cpp mainWindow.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainWindow.o mainWindow.cpp
+
+localizationPage.o: localizationPage.cpp keymaps.hpp \
+		timezones.hpp \
+		mainWindow.hpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o localizationPage.o localizationPage.cpp
+
+networkPage.o: networkPage.cpp mainWindow.hpp \
+		network.hpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o networkPage.o networkPage.cpp
 
 moc_mainWindow.o: moc_mainWindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mainWindow.o moc_mainWindow.cpp

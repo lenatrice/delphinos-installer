@@ -4,7 +4,6 @@
 #include <QString>
 #include <QMap>
 #include <regex>
-#include <QXmlStreamReader>
 #include <cstdlib>
 #include <array>
 #include <memory>
@@ -405,7 +404,6 @@ static const QMap<QString, QString> variantMap
     { "indigenous", "Indigenous" }
 };
 
-
 QString getLayoutName(const QString &layoutCode)
 {
     return layoutMap.value(layoutCode, layoutCode);
@@ -416,12 +414,10 @@ QString getLayoutCode(const QString &layoutName)
     return layoutMap.key(layoutName, layoutName);
 }
 
-
 QString getVariantName(const QString &variantCode)
 {
     return variantMap.value(variantCode, variantCode);
 }
-
 
 QString getVariantCode(const QString &variantName)
 {
@@ -486,7 +482,6 @@ QString getKeymapLayoutDefaultVariant(const QString& keymapLayout)
     file.close();
     return 0;
 }
-
 
 std::string getCurrentKeymapLayout()
 {

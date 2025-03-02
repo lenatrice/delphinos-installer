@@ -11,7 +11,9 @@ TARGET = "delphinos-installer"
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    mainWindow.cpp
+    mainWindow.cpp \
+    localizationPage.cpp \
+    networkPage.cpp
 
 HEADERS  += mainWindow.hpp
 
