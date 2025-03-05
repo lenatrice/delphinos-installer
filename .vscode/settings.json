@@ -84,7 +84,10 @@
         "regex": "cpp",
         "qvboxlayout": "cpp",
         "qlistwidgetitem": "cpp",
-        "qdbusconnection": "cpp"
+        "qdbusconnection": "cpp",
+        "qdbusobjectpath": "cpp",
+        "qdbusmetatype": "cpp",
+        "qtranslator": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

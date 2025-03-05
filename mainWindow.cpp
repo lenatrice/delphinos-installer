@@ -1,4 +1,7 @@
 #include "mainWindow.hpp"
+#include "localizationPage.hpp"
+#include "networkPage.hpp"
+#include "partitionPage.hpp"
 #include <cstdlib>
 #include <unistd.h>
 #include <vector>
@@ -8,67 +11,77 @@
 #include <QBrush>
 #include <QPainterPath>
 
-#ifdef signals
-#undef signals
-#endif
-
-#include <glib.h>
-#include <NetworkManager.h>
-
-#define signals Q_SIGNALs
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    setFixedSize(640, 480);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
+    QTimer::singleShot(0, this, [this]() {
+        if (windowHandle()) {
+            screen = windowHandle()->screen();
+            screenGeometry = screen->geometry();
+            if (screen) {
+                connect(screen, &QScreen::geometryChanged,
+                        this, &MainWindow::onScreenGeometryChanged);
+            }
+        }
+        windowCenter = QPoint(screenGeometry.width() / 2, screenGeometry.height() / 2);
+        centerWindow();
+    });
+
+    
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
-
+    
     // Window layout
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setAlignment(Qt::AlignTop);
+    pageStack = new QStackedWidget(centralWidget);
 
-    // Page content
-    page = new QStackedWidget(this);
-    pageContent[0] = pageCreateLocalization();
-    pageContent[1] = pageCreateNetwork();
-    pageContent[2] = pageCreatePartition();
-    page->addWidget(pageContent[0]);
-    page->addWidget(pageContent[1]);
-    page->addWidget(pageContent[2]);
-    page->setCurrentIndex(0);
+    mainLayout->addWidget(pageStack, 0, Qt::AlignTop);
+    
+    // Window pages
 
-    mainLayout->addWidget(page);
+    LocalizationPage* localizationPage = new LocalizationPage(this);
+    pageList.append(localizationPage->getPage());
+
+    NetworkPage* networkPage = new NetworkPage(this);
+    pageList.append(networkPage->getPage());
+
+    PartitionPage* partitionPage = new PartitionPage(this);
+    pageList.append(partitionPage->getPage());
+
+    for (PageContent* page : pageList)
+    {
+        pageStack->addWidget(page);
+    }
+
+    pageStack->setCurrentIndex(0);
+    setFixedSize(pageList[0]->getSize());
 
     // Navigation buttons
-    QWidget * navigationWidget = new QWidget(this);
+    QWidget * navigationWidget = new QWidget(centralWidget);
     QHBoxLayout * navigationButtonLayout = new QHBoxLayout(navigationWidget);
 
-    buttonBack = new QPushButton("Voltar", this);
+    buttonBack = new QPushButton("Voltar", navigationWidget);
     navigationButtonLayout->addWidget(buttonBack);
 
-    buttonNext = new QPushButton("Avançar", this);
+    buttonNext = new QPushButton("Avançar", navigationWidget);
     navigationButtonLayout->addWidget(buttonNext);
 
     navigationButtonLayout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
 
+    mainLayout->addStretch();
     mainLayout->addWidget(navigationWidget);
-
 
     connect(buttonBack, &QPushButton::clicked, this, &MainWindow::onBackClicked);
     connect(buttonNext, &QPushButton::clicked, this, &MainWindow::onNextClicked);
+
 };
 
-QWidget* MainWindow::pageCreatePartition()
+void MainWindow::onScreenGeometryChanged(const QRect& geometry)
 {
-    WindowPage* page = new WindowPage(
-        "Configurar partições para o sistema",
-        "Nessa etapa iremos criar as partições que serão usadas pelo sistema ou selecionar partições já existentes."
-    );
-
-    return page;
+    screenGeometry = geometry;
+    centerWindow();
 };
 
 // Custom window background 
@@ -81,7 +94,7 @@ void MainWindow::paintEvent(QPaintEvent* event)
     backgroundBorder.setWidth(1);
     painter.setPen(backgroundBorder);
 
-    QBrush brush(QColor("#191B21"));
+    QBrush brush(QColor("#16171c"));
     painter.setBrush(brush);
 
     QRectF background(0, 0, this->width(), this->height());
@@ -133,21 +146,52 @@ void MainWindow::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-// Window buttons functions
+void MainWindow::moveEvent(QMoveEvent* event)
+{
+    windowCenter = geometry().center();
+    QMainWindow::moveEvent(event);
+}
 
+// Keep window centralized to its position when resizing
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    qDebug() << "Resize event:" << event->size();
+
+    QMainWindow::resizeEvent(event);
+
+    pageList[pageStack->currentIndex()]->updateGeometry();
+    
+    move(windowCenter.x() - width() / 2, windowCenter.y() - height() / 2);
+}
+
+void MainWindow::centerWindow()
+{
+    if (!screen) return;
+
+    windowCenter = QPoint(screenGeometry.width()/2, screenGeometry.height()/2);
+
+    move(windowCenter.x() - width() / 2, windowCenter.y() - height() / 2);
+}
+
+// Window buttons functions
 void MainWindow::onBackClicked()
 {
-    if (page->currentIndex() > 0)
+    if (pageStack->currentIndex() > 0)
     {
-        page->setCurrentIndex(page->currentIndex()-1);
+        int newIndex = pageStack->currentIndex() - 1;
+        pageStack->setCurrentIndex(newIndex);
+        setFixedSize(pageList[newIndex]->getSize());
     }
 }
 
 void MainWindow::onNextClicked()
 {
-    if (page->currentIndex() != page->count() - 1)
+    qDebug() << "Page:" << pageStack->currentIndex() + 1 << "/" << pageStack->count() ;
+    if (pageStack->currentIndex() < pageStack->count() - 1)
     {
-        page->setCurrentIndex(page->currentIndex()+1);
+        int newIndex = pageStack->currentIndex() + 1;
+        pageStack->setCurrentIndex(newIndex);
+        setFixedSize(pageList[newIndex]->getSize());
     } else
     {
         close();

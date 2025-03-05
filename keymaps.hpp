@@ -483,7 +483,7 @@ QString getKeymapLayoutDefaultVariant(const QString& keymapLayout)
     return 0;
 }
 
-std::string getCurrentKeymapLayout()
+QString getCurrentKeymapLayout()
 {
     std::array<char, 128> buffer;
     std::string result;
@@ -502,7 +502,7 @@ std::string getCurrentKeymapLayout()
             std::istringstream iss(line);
             std::string key, layout;
             iss >> key >> layout;
-            return layout;
+            return QString::fromStdString(layout);
         }
 
         result += buffer.data();

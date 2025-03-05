@@ -3,11 +3,10 @@
 
 #include <iostream>
 #include <QMainWindow>
+#include <QWindow>
 #include <QScreen>
-#include <QDesktopWidget>
 #include <QPushButton>
 #include <QMessageBox>
-#include <QGuiApplication>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -20,62 +19,52 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QTranslator>
+#include "networkDBus.hpp"
+
+class PageContent;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
+    QScreen* screen = nullptr;
+    QRect screenGeometry;
     explicit MainWindow(QWidget* parent = nullptr);
-    const QScreen* screen = QGuiApplication::primaryScreen();
-    const QRect screenGeometry = screen->geometry();
-    int screenHeight = screenGeometry.height();
-    int screenWidth = screenGeometry.width();
+    bool userMovedWindow = false;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private: 
-    QStackedWidget* page;
-    QWidget* pageContent[3];
+    // Window
+    QStackedWidget* pageStack;
+    QList<PageContent*> pageList;
+    QPoint windowCenter;
+    QPushButton* buttonBack;
+    QPushButton* buttonNext;
 
-    QWidget* pageCreateLocalization();
-    bool keymapLayoutChanged = false;
-
-    QWidget* pageCreateNetwork();
-    const int networkDevicePathRole = Qt::UserRole;
-    const int networkDeviceTypeRole = Qt::UserRole + 1;
-    const int wifiAccessPointNameRole = Qt::UserRole;
-    const int wifiAccessPointPathRole = Qt::UserRole + 1;
-
-    QWidget* pageCreatePartition();
-
-    void populateKeymapLayouts(QComboBox* keymapLayoutCombobox);
-    void populateTimezones(QComboBox* keymapLayoutCombobox);
-    void populateNetworkDevices(QFormLayout* networkFormLayout, QListWidget* networkDeviceList, QListWidget* wifiAccessPointList);
+    void centerWindow();
 
     QPoint dragPosition;
     bool dragging = false;
 
-    QPushButton* buttonBack;
-    QPushButton* buttonNext;
-
 private slots:
+    // Screen geometry change slot
+    void onScreenGeometryChanged(const QRect& geometry);
+
+    // Navigation slots
     void onNextClicked();
     void onBackClicked();
 
-    // Localization slots
-    void updateLanguage();
-    void updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
-    void updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox);
-    void updateTimezone(QComboBox* timezoneCombobox, int timezoneComboboxIndex);
-
-    // Network slots
-    void updateNetworkDevice(QFormLayout* networkFormLayout, QListWidgetItem* networkDeviceItem, QListWidget* wifiAccessPointsList);
-    void connectNetwork(QListWidgetItem* networkDeviceItem, QListWidgetItem* wifiAccessPointItem);
+signals:
+    void connectionState(const QDBusObjectPath& connectionPath, const uint& state);
+    void networkDeviceState(const QDBusObjectPath& connectionPath, const uint& state);
 };
 
 struct PageTitle : public QLabel
@@ -115,28 +104,31 @@ struct PageDescription : public QLabel
     }
 };
 
-
-class WindowPage : public QWidget
+class PageContent : public QWidget
 {
+Q_OBJECT
+private:
     QVBoxLayout* layout;
     PageTitle* title;
-    PageDescription* description; 
+    PageDescription* description;
+    QSize pageSize;
 
 public:
-    WindowPage(const QString& _title, const QString& _description)
+    PageContent(const QString& _title, const QString& _description, int width, int height)
     {
         layout = new QVBoxLayout(this);
-
-        title = new PageTitle(_title);
-        layout->addWidget(title);
+        title = new PageTitle(_title, this);
+        layout->addWidget(title, 0, Qt::AlignTop);
 
         description = new PageDescription(_description, this);
-        layout->addWidget(description);
+        layout->addWidget(description, 0, Qt::AlignTop);
 
         layout->setAlignment(Qt::AlignTop);
 
-        this->show();
+        pageSize = QSize(width, height);
     }
+
+    ~PageContent() override = default;
 
     void setTitle(const QString& _title)
     {
@@ -148,11 +140,25 @@ public:
         description->setText(_description);
     }
 
-    void addWidget(QWidget* widget)
+    void addStretch()
     {
-        layout->addWidget(widget, 0, Qt::AlignTop);
+        layout->addStretch();
     }
 
+    void addWidget(QWidget* widget)
+    {
+        layout->addWidget(widget, 0, Qt::AlignVCenter | Qt::AlignLeft);
+    }
+
+    void addLayout(QLayout* widget)
+    {
+        layout->addLayout(widget);
+    }
+
+    QSize getSize()
+    {
+        return pageSize;
+    }
 };
 
 #endif //MAINWINDOW_H

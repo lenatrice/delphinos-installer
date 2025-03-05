@@ -1,318 +1,544 @@
-#include "mainWindow.hpp"
-#include "network.hpp"
-
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QDebug>
-#include <QUuid>
+#include "networkPage.hpp"
+#include <QLineEdit>
 #include <QInputDialog>
 #include <QDBusMetaType>
+#include <QDialog>
+#include <QMap>
 
-QWidget* MainWindow::pageCreateNetwork()
+static const QMap<int, QString> networkTypeMap
 {
-    WindowPage* page = new WindowPage(
+    { 1, "Ethernet" },
+    { 2, "Wi-Fi" },
+    { 3, "Bridge" },
+    { 4, "Loopback" },
+    { 5, "Tunnel" },
+    { 6, "VLAN" },
+    { 7, "ADSL" },
+    { 8, "MACVLAN" },
+    { 10, "Bond" },
+    { 11, "Team" },
+    { 12, "IP Tunnel" },
+    { 13, "Virtual Bridge" },
+    { 14, "MACsec" },
+    { 15, "Virtual Ethernet" },
+    { 16, "Virtual Network" },
+    { 17, "Point-to-Point Prococol" },
+    { 18, "OVS Bridge" },
+    { 19, "OVS Port" },
+    { 20, "OVS Interface" },
+    { 21, "Generic" },
+    { 22, "TUN" },
+    { 23, "TAP" },
+    { 24, "IP6 Tunnel" },
+    { 25, "WireGuard" },
+    { 26, "Wi-Fi Point-to-Point" },
+    { 27, "VRF" },
+    { 28, "Lowpan" },
+    { 29, "Dummy" },
+    { 30, "Point-to-Point Prococol over Ethernet" },
+    { 31, "InfiniBand" },
+    { 32, "Loopback" },
+};
+
+NetworkPage::NetworkPage(QWidget* parent) : QWidget(parent)
+{
+    page = new PageContent(
         "Configurar conexão de rede",
-        "Selecione a rede que deseja utilizar para instalar o sistema."
+        "Selecione a rede que deseja utilizar para instalar o sistema.",
+        480, 640
     );
 
-    QWidget* networkWidget = new QWidget(this);
-    QVBoxLayout* networkVBoxLayout = new QVBoxLayout(networkWidget);
-
-    QFormLayout* networkFormLayout = new QFormLayout;
-    networkFormLayout->setAlignment(Qt::AlignTop);
-    networkVBoxLayout->addLayout(networkFormLayout);
-
-    QListWidget* networkDeviceList = new QListWidget(this);
-    networkDeviceList->setMaximumHeight(120);
-    networkFormLayout->addRow("Dispositivos de rede:", networkDeviceList);
-
+    formLayout = new QFormLayout;
+    
+    deviceList = new QListWidget;
+    formLayout->addRow("Dispositivos de rede:", deviceList);
+    
     // Wi-Fi access points list
-    QListWidget* wifiAccessPointList = new QListWidget(this);
+    wifiAccessPointList = new QListWidget;
     wifiAccessPointList->hide(); // Hide Wi-Fi access points list until a Wi-Fi network device is selected
-
+    
     // Network function buttons
-    QHBoxLayout* networkFunctionButtons = new QHBoxLayout;
-    networkFunctionButtons->setAlignment(Qt::AlignBottom | Qt::AlignRight);
-
-    QPushButton* refreshNetworkDevicesButton = new QPushButton("Atualizar", this);
-    QPushButton* disconnectButton = new QPushButton("Desconectar", this);
-    QPushButton* connectButton = new QPushButton("Conectar", this);
-    networkFunctionButtons->addWidget(refreshNetworkDevicesButton);
-    networkFunctionButtons->addWidget(disconnectButton);
-    networkFunctionButtons->addWidget(connectButton);
-
-    networkVBoxLayout->addLayout(networkFunctionButtons);
-
-    populateNetworkDevices(networkFormLayout, networkDeviceList, wifiAccessPointList);
-
-    connect(networkDeviceList, &QListWidget::currentItemChanged,
-        [this, &networkFormLayout, &wifiAccessPointList](QListWidgetItem* networkDeviceItem)
+    functionButtons = new QHBoxLayout;
+    functionButtons->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+    
+    refreshButton = new QPushButton("Atualizar");
+    disconnectButton = new QPushButton("Desconectar");
+    connectButton = new QPushButton("Conectar");
+    functionButtons->addWidget(refreshButton);
+    functionButtons->addWidget(disconnectButton);
+    functionButtons->addWidget(connectButton);
+    
+    populateNetworkDevices();
+    
+    connect(deviceList, &QListWidget::currentItemChanged,
+        [this](QListWidgetItem* networkDeviceItem)
         {
-            updateNetworkDevice(networkFormLayout, networkDeviceItem, wifiAccessPointList);
+            updateNetworkDevice();
         }
     );
-
-    connect(refreshNetworkDevicesButton, &QPushButton::clicked, this,
-        [this, &networkFormLayout, &networkDeviceList, &wifiAccessPointList](const bool)
+    
+    connect(refreshButton, &QPushButton::clicked, this,
+        [this](const bool)
         {
-            populateNetworkDevices(networkFormLayout, networkDeviceList, wifiAccessPointList);
+            populateNetworkDevices();
         }
     );
-
+    
     connect(connectButton, &QPushButton::clicked, this,
-        [this, &networkFormLayout, &networkDeviceList, &wifiAccessPointList](const bool)
+        [this](const bool)
         {
-            connectNetwork(networkDeviceList->currentItem(), wifiAccessPointList->currentItem());
+            connectNetwork();
         }
     );
-
-    page->addWidget(networkWidget);
-
-    return page;
+    
+    page->addStretch();
+    page->addLayout(formLayout);
+    page->addLayout(functionButtons);
 }
 
-void MainWindow::connectNetwork(QListWidgetItem* networkDeviceItem, QListWidgetItem* wifiAccessPointItem)
+
+void NetworkPage::populateNetworkDevices()
 {
-    const int networkDeviceType = networkDeviceItem->data(networkDeviceTypeRole).toInt();
-    QDBusObjectPath networkDevicePath = QDBusObjectPath(networkDeviceItem->data(networkDevicePathRole).toString());
-
-    const QString NM_SERVICE = "org.freedesktop.NetworkManager";
-    const QString NM_PATH = "/org/freedesktop/NetworkManager";
-    const QString NM_SETTINGS = "org.freedesktop.NetworkManager.Settings";
-    const QString NM_SETTINGS_PATH = "/org/freedesktop/NetworkManager/Settings";
-
-    qDBusRegisterMetaType<QMap<QString, QVariant>>();
-    qDBusRegisterMetaType<QMap<QString, QMap<QString, QVariant>>>();
-
-    if (networkTypeMap.value(networkDeviceType) == "Wi-Fi")
-    {
-        if (wifiAccessPointItem)
-        {
-            QDBusInterface nmInterface(NM_SERVICE, NM_PATH, NM_SERVICE, QDBusConnection::systemBus());
-
-            QDBusInterface nmSettingsInterface(NM_SERVICE, NM_SETTINGS_PATH, NM_SETTINGS, QDBusConnection::systemBus());
-
-            if (!nmInterface.isValid())
-            {
-                qCritical() << "Failed to connect to NetworkManager D-Bus service:" << nmInterface.lastError().message();
-                return;
-            }
-
-            if (!nmSettingsInterface.isValid())
-            {
-                qCritical() << "Failed to connect to NetworkManager settings D-Bus service:" << nmSettingsInterface.lastError().message();
-                return;
-            }
-
-            const QString wifiAccessPointPath = wifiAccessPointItem->data(wifiAccessPointPathRole).toString();
-
-            bool wifiAccessPointPasswordSent;
-            QString wifiAccessPointPassword = QInputDialog::getText(
-                nullptr,
-                "Password for " + wifiAccessPointItem->text(),
-                "Enter the password for access point " + wifiAccessPointItem->text(),
-                QLineEdit::Password,
-                "",
-                &wifiAccessPointPasswordSent
-            );
-
-            if (!wifiAccessPointPasswordSent || wifiAccessPointPassword.isEmpty())
-            {
-                qDebug() << "Password input was cancelled or is empty.";
-                return;
-            }
-
-            QMap<QString, QMap<QString, QVariant>> settings;
-            settings["connection"] = QMap<QString, QVariant>{
-                { "type", "802-11-wireless" },
-                { "uuid", QUuid::createUuid().toString().remove('{').remove('}')},
-                { "id", wifiAccessPointItem->text() }
-            };
-            settings["802-11-wireless"] = QMap<QString, QVariant>{
-                { "ssid", QByteArray(wifiAccessPointItem->text().toUtf8()) },
-                { "mode", "infrastructure" }
-            };
-            settings["802-11-wireless-security"] = QMap<QString, QVariant>{
-                { "key-mgmt", "wpa-psk"},
-                { "psk", wifiAccessPointPassword }
-            };
-            settings["ipv4"] = QMap<QString, QVariant>{
-                { "method", "auto"}
-            };
-            settings["ipv6"] = QMap<QString, QVariant>{
-                { "method", "auto"}
-            };
-
-            QDBusReply<QDBusObjectPath> addConnectionReply = nmSettingsInterface.call("AddConnection", QVariant::fromValue(settings));
-
-            if (addConnectionReply.isValid())
-            {
-                QDBusObjectPath connectionPath = addConnectionReply.value();
-
-                QDBusReply<QDBusObjectPath> activateConnectionReply = nmInterface.call("ActivateConnection", QVariant::fromValue(connectionPath), QVariant::fromValue(networkDevicePath), QVariant::fromValue(QDBusObjectPath("/")));
-                if (activateConnectionReply.isValid())
-                {
-                    qDebug() << "Successfully connected network.";
-                } else {
-                    qCritical() << "Could not connect to network:" << activateConnectionReply.error().message();
-                }
-            } else {
-                qCritical() << "Failed to add connection:" << addConnectionReply.error().message();
-            }
-
-        } else {
-            qCritical() << "Error: did not select Wi-Fi access point to connect";
-        }
-    } else {
-        qDebug() << "Selected non Wi-Fi network device";
-    }
-}
-
-void MainWindow::populateNetworkDevices(QFormLayout* networkFormLayout, QListWidget* networkDeviceList, QListWidget* wifiAccessPointList)
-{
-    QListWidgetItem* currentDevice = networkDeviceList->currentItem();
+    QListWidgetItem* currentDevice = deviceList->currentItem();
+    QListWidgetItem* currentAccessPoint = wifiAccessPointList->currentItem();
     QString currentDevicePath;
+
     if (currentDevice)
     {
-        currentDevicePath = currentDevice->data(networkDevicePathRole).toString();
+        currentDevicePath = getNetworkDevice(currentDevice)->dbusPath.path();
     }
 
-    networkDeviceList->clear();
+    qDebug() << "Clearing list of network devices";
+    clearNetworkDevices(networkDevices, deviceList);
 
     QDBusInterface dbusInterface("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager", "org.freedesktop.NetworkManager", QDBusConnection::systemBus());
 
-    if (dbusInterface.isValid())
-    {
-        QDBusReply<QList<QDBusObjectPath>> dbusReply = dbusInterface.call("GetAllDevices");
-        QList<QDBusObjectPath> dbusDevices = dbusReply.value();
-
-        if (dbusReply.isValid())
-        {
-            for (const QDBusObjectPath& devicePath : dbusDevices)
-            {
-                QDBusInterface deviceInterface("org.freedesktop.NetworkManager", devicePath.path(), "org.freedesktop.DBus.Properties", QDBusConnection::systemBus());
-                QDBusReply<QVariant> deviceReply = deviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "Interface");
-                if (deviceReply.isValid())
-                {
-                    QString deviceName = deviceReply.value().toString();
-                    QDBusReply<QVariant> deviceTypeReply = deviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "DeviceType");
-                    if (deviceTypeReply.isValid())
-                    {
-                        int deviceType = deviceTypeReply.value().toInt();
-                        deviceName += " (" + networkTypeMap.value(deviceType, "Unknown") + ")";
-                    } else {
-                        qWarning() << "Coult not determine type of device" << deviceName << ":" << deviceTypeReply.error().message();
-                    }
-        
-                    QListWidgetItem* newDevice = new QListWidgetItem(deviceName);
-                    newDevice->setData(networkDevicePathRole, devicePath.path());
-                    newDevice->setData(networkDeviceTypeRole, deviceTypeReply.value().toInt());
-                    networkDeviceList->addItem(newDevice);
-                } else {
-                    qCritical() << "Failed to get device interface for path" << devicePath.path() << ":" << deviceReply.error().message();
-                }
-            }        
-        } else{
-            qCritical() << "Failed to call D-Bus method: " << dbusReply.error().message();
-            return;
-        }
-    } else {
+    if (!dbusInterface.isValid())
+    {   
         qCritical() << "Failed to connect to D-Bus: " << QDBusConnection::systemBus().lastError().message();
         return;
+    }
+
+    QDBusReply<QList<QDBusObjectPath>> getAllDevicesReply = dbusInterface.call("GetAllDevices");
+    QList<QDBusObjectPath> dbusDevices = getAllDevicesReply.value();
+
+    if (!getAllDevicesReply.isValid())
+    {
+        qCritical() << "Failed to call GetAllDevices: " << QDBusConnection::systemBus().lastError().message();
+        return;
+    }
+    
+    qDebug() << "Populating network devices";
+    for (const QDBusObjectPath& devicePath : dbusDevices)
+    {
+        QDBusInterface deviceInterface("org.freedesktop.NetworkManager", devicePath.path(), "org.freedesktop.DBus.Properties", QDBusConnection::systemBus());
+        QDBusReply<QVariant> deviceReply = deviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "Interface");
+
+        if (!deviceReply.isValid())
+        {
+            qCritical() << "Failed to get device interface for path" << devicePath.path() << ":" << deviceReply.error().message();
+            continue;
+        }
+
+        NetworkDevice* newNetworkDevice;
+        QString deviceName = deviceReply.value().toString();
+        QDBusReply<QVariant> deviceTypeReply = deviceInterface.call("Get", "org.freedesktop.NetworkManager.Device", "DeviceType");
+
+        if (!deviceTypeReply.isValid())
+        {
+            qWarning() << "Coult not determine type of device" << deviceName << ":" << deviceTypeReply.error().message();
+        }
+
+        int deviceType = deviceTypeReply.value().toInt();
+        newNetworkDevice = new NetworkDevice(devicePath, deviceName, networkTypeMap.value(deviceType, "Unknown"));
+        networkDevices.push_back(newNetworkDevice);
+        deviceName += " (" + networkTypeMap.value(deviceType, "Unknown") + ")";
+
+        QListWidgetItem* newItem = new QListWidgetItem(deviceName);
+        newItem->setData(networkDeviceObjRole, QVariant::fromValue(newNetworkDevice));
+        deviceList->addItem(newItem);
     }
 
     // Reset previously selected item
     if (!currentDevicePath.isEmpty())
     {
-        for (int i = 0; i < networkDeviceList->count(); i++)
+        for (int i = 0; i < deviceList->count(); i++)
         {
-            QListWidgetItem* item = networkDeviceList->item(i);
+            QListWidgetItem* item = deviceList->item(i);
 
-            if (item->data(networkDevicePathRole) == currentDevicePath)
+            if (item->data(networkDeviceObjRole).value<NetworkDevice*>()->dbusPath.path() == currentDevicePath)
             {
-                networkDeviceList->setCurrentItem(item);
+                deviceList->setCurrentItem(item);
                 break;
             }
         }
     }
 
-    updateNetworkDevice(networkFormLayout, networkDeviceList->currentItem(), wifiAccessPointList);
+    updateNetworkDevice();
 }
 
 
-void MainWindow::updateNetworkDevice(QFormLayout* networkFormLayout, QListWidgetItem* networkDeviceItem, QListWidget* wifiAccessPointList)
+void NetworkPage::updateNetworkDevice()
 {
-    networkFormLayout->parentWidget()->setUpdatesEnabled(false);
-    if (!networkDeviceItem) {
-        for (int i = 0; i < networkFormLayout->rowCount(); ++i)
-        {
-            QLayoutItem* item = networkFormLayout->itemAt(i, QFormLayout::FieldRole);
-            if (item && item->widget() == wifiAccessPointList) {
-                networkFormLayout->removeWidget(wifiAccessPointList);
-                networkFormLayout->removeRow(i);
-                wifiAccessPointList->clear();
-                wifiAccessPointList->hide();
-                break;
-            }
-        }
-        networkFormLayout->parentWidget()->setUpdatesEnabled(true);
-        return; 
-    }
-    const QString networkDevicePath = networkDeviceItem->data(networkDevicePathRole).toString();
-    const int networkDeviceType = networkDeviceItem->data(networkDeviceTypeRole).toInt();
+    qDebug() << "Updating network device";
+    
+    NetworkDevice* networkDevice = getNetworkDevice(deviceList->currentItem());
 
-    for (int i = 0; i < networkFormLayout->rowCount(); ++i)
+    for (int i = 0; i < formLayout->rowCount(); ++i)
     {
-        QLayoutItem* item = networkFormLayout->itemAt(i, QFormLayout::FieldRole);
+        QLayoutItem* item = formLayout->itemAt(i, QFormLayout::FieldRole);
         if (item && item->widget() == wifiAccessPointList) {
-            networkFormLayout->removeWidget(wifiAccessPointList);
-            networkFormLayout->removeRow(i);
+            formLayout->removeWidget(wifiAccessPointList);
+            formLayout->removeRow(i);
             wifiAccessPointList->clear();
             wifiAccessPointList->hide();
             break;
         }
     }
 
-    if (networkDeviceType == networkTypeMap.key("Wi-Fi"))
-    {
-        QDBusInterface wifiInterface("org.freedesktop.NetworkManager", networkDevicePath, "org.freedesktop.NetworkManager.Device.Wireless", QDBusConnection::systemBus());
-
-        networkFormLayout->addRow("Pontos de acesso:", wifiAccessPointList);
-        wifiAccessPointList->show();
-
-        if (wifiInterface.isValid())
-        {
-            QDBusReply<QList<QDBusObjectPath>> wifiAccessPointsReply = wifiInterface.call("GetAllAccessPoints");
-            if (wifiAccessPointsReply.isValid())
-            {
-                for (const QDBusObjectPath& accessPointIterator : wifiAccessPointsReply.value())
-                {
-                    QString accessPointPath = accessPointIterator.path();
-                    QDBusInterface accessPointInterface("org.freedesktop.NetworkManager", accessPointIterator.path(), "org.freedesktop.DBus.Properties", QDBusConnection::systemBus());
-                    if (accessPointInterface.isValid())
-                    {
-                        QDBusReply<QVariant> accessPointNameReply = accessPointInterface.call("Get", "org.freedesktop.NetworkManager.AccessPoint", "Ssid");
-                        if (accessPointNameReply.isValid())
-                        {
-                            QListWidgetItem* newAccessPoint = new QListWidgetItem(accessPointNameReply.value().toString());
-                            newAccessPoint->setData(wifiAccessPointPathRole, accessPointIterator.path());
-                            wifiAccessPointList->addItem(newAccessPoint);
-                        } else {
-                            qWarning() << "Failed to get access point SSID for path" << accessPointIterator.path() << ":" << accessPointNameReply.error().message();
-                        }
-                    } else {
-                        qWarning() << "Failed to get access point interface for path" << accessPointIterator.path() << ":" << accessPointInterface.lastError().message();
-                    }
-                }
-            } else {
-                qWarning() << "Failed to call Wi-Fi device method GetAllAccessPoints:" << wifiAccessPointsReply.error().message();
-            }
-        } else { 
-            qWarning() << "Failed to get Wi-Fi device interface for" << networkDevicePath << ":" << wifiInterface.lastError().message();
-        }
-    } else {
+    if (!networkDevice) {
+        return; 
     }
 
-    networkFormLayout->parentWidget()->setUpdatesEnabled(true);
+    // If the selected device is Wi-Fi, generate access points
+    if (networkDevice->type == "Wi-Fi")
+    {
+        qDebug() << "Creating new Wi-Fi interface for" << networkDevice->dbusPath.path();
+        QDBusInterface wifiInterface("org.freedesktop.NetworkManager", networkDevice->dbusPath.path(), "org.freedesktop.NetworkManager.Device.Wireless", QDBusConnection::systemBus());
+
+        formLayout->addRow("Pontos de acesso:", wifiAccessPointList);
+        wifiAccessPointList->show();
+
+        if (!wifiInterface.isValid())
+        {
+            qWarning() << "Failed to get Wi-Fi device interface for" << networkDevice->dbusPath.path() << ":" << wifiInterface.lastError().message();
+            return;
+        }
+
+        QDBusReply<QList<QDBusObjectPath>> wifiAccessPointsReply = wifiInterface.call("GetAllAccessPoints");
+        if (!wifiAccessPointsReply.isValid())
+        {
+            qWarning() << "Failed to call Wi-Fi device method GetAllAccessPoints:" << wifiAccessPointsReply.error().message();
+            return;
+        }
+
+        for (const QDBusObjectPath& accessPointIterator : wifiAccessPointsReply.value())
+        {
+            const QDBusObjectPath& accessPointPath = accessPointIterator;
+            QDBusInterface accessPointInterface("org.freedesktop.NetworkManager", accessPointIterator.path(), "org.freedesktop.DBus.Properties", QDBusConnection::systemBus());
+            if (!accessPointInterface.isValid())
+            {
+                qWarning() << "Failed to get access point interface for path" << accessPointIterator.path() << ":" << accessPointInterface.lastError().message();
+                continue;
+            }
+
+            QDBusReply<QVariant> accessPointSsidReply = accessPointInterface.call("Get", "org.freedesktop.NetworkManager.AccessPoint", "Ssid");
+            if (!accessPointSsidReply.isValid())
+            {
+                qWarning() << "Failed to get access point SSID for path" << accessPointIterator.path() << ":" << accessPointSsidReply.error().message();
+                continue;
+            }
+
+            WifiAccessPoint* newAccessPoint = new WifiAccessPoint(accessPointPath, networkDevice, accessPointSsidReply.value().toString());
+            networkDevice->accessPoints.push_back(newAccessPoint);
+
+            qDebug() << "Access point SSID:" << newAccessPoint->ssid;
+
+            QListWidgetItem* newAccessPointItem = new QListWidgetItem(newAccessPoint->ssid);
+            newAccessPointItem->setData(wifiAccessPointObjRole, QVariant::fromValue<WifiAccessPoint*>(newAccessPoint));
+            wifiAccessPointList->addItem(newAccessPointItem);
+        }
+    }
+}
+
+
+
+void NetworkPage::connectNetwork()
+{
+    qDBusRegisterMetaType<ConnectionSettings>();
+    qDBusRegisterMetaType<ConnectionSettingsItem>();
+
+    QDBusInterface nmInterface(NM_SERVICE, NM_PATH, NM_SERVICE, QDBusConnection::systemBus());
+    if (!nmInterface.isValid())
+    {
+        qCritical() << "Failed to connect to NetworkManager D-Bus service:" << nmInterface.lastError().message();
+        return;
+    }
+    QDBusInterface nmSettingsInterface(NM_SERVICE, NM_SETTINGS_PATH, NM_SETTINGS, QDBusConnection::systemBus());
+    if (!nmSettingsInterface.isValid())
+    {
+        qCritical() << "Failed to connect to NetworkManager settings D-Bus service:" << nmSettingsInterface.lastError().message();
+        return;
+    }
+
+    const NetworkDevice* networkDevice = getNetworkDevice(deviceList->currentItem());
+    WifiAccessPoint* wifiAccessPoint = getAccessPoint(wifiAccessPointList->currentItem());
+
+    NetworkConnection* networkConnection = nullptr;
+
+    if (networkDevice->type == "Wi-Fi")
+    {
+        if (wifiAccessPoint)
+        {
+            ConnectionSettings nmSettings;
+
+            // Check for existing connections for this network
+            QDBusReply<QList<QDBusObjectPath>> listConnectionsReply = nmSettingsInterface.call("ListConnections");
+            QString existingPassword;
+            if (!listConnectionsReply.isValid())
+            {
+                qWarning() << "Failed to get list connections:" << listConnectionsReply.error().message();
+            }
+
+            for (const QDBusObjectPath& tempConnectionPath : listConnectionsReply.value())
+            {
+                QDBusInterface connectionInterface(NM_SERVICE, tempConnectionPath.path(), "org.freedesktop.NetworkManager.Settings.Connection", QDBusConnection::systemBus());
+                if (!connectionInterface.isValid())
+                {
+                    qWarning() << "Failed to get connection interface:" << connectionInterface.lastError().message();
+                    continue;
+                }
+                
+                QDBusReply<ConnectionSettings> getSettingsReply = connectionInterface.call("GetSettings");
+                if (!getSettingsReply.isValid())
+                {
+                    qWarning() << "Failed to get connection settings for " << tempConnectionPath.path() << ":" << getSettingsReply.error().message();
+                    continue;
+                }
+
+                ConnectionSettings tempNmSettings = getSettingsReply.value();
+                if (!tempNmSettings.contains("802-11-wireless"))
+                {
+                    continue;
+                }
+
+                QByteArray tempSsid = tempNmSettings["802-11-wireless"]["ssid"].toByteArray();
+                //Check if found SSID corresponds to the selected Access Point
+                if (tempSsid != QByteArray(wifiAccessPoint->ssid.toUtf8()))
+                {
+                    continue;
+                }
+
+                qDebug() << "Found existing connection for SSID:" << wifiAccessPoint->ssid;
+                networkConnection = new NetworkConnection(tempConnectionPath, networkDevice, wifiAccessPoint);
+                nmSettings = tempNmSettings;
+                if (!nmSettings.contains("802-11-wireless-security"))
+                {
+                    continue;
+                }
+
+                existingPassword = nmSettings["802-11-wireless-security"]["psk"].toString();
+
+                // If GetSettings retrieve no password, try GetSecrets
+                if (existingPassword.isEmpty())
+                {
+                    QDBusReply<ConnectionSecrets> getSecretsReply = connectionInterface.call("GetSecrets", "802-11-wireless-security");
+                    if (!getSecretsReply.isValid())
+                    {
+                        qWarning() << "Failed to get connection secrets:" << getSettingsReply.error().message();
+                    }
+
+                    ConnectionSecrets nmSecrets = getSecretsReply.value();
+                    existingPassword = nmSecrets["802-11-wireless-security"]["psk"].toString();
+
+                    for (const QString& key : nmSecrets.keys())
+                    {
+                        // If network settings doesn't contain the same secrets key, add the entire key
+                        if (!nmSettings.contains(key))
+                        {
+                            nmSettings[key] = nmSecrets[key];
+                            qDebug() << "Added secret key to settings:" << nmSettings[key];
+                            continue;
+                        }
+
+                        // If network settings contain the same secrets key, change its subkeys
+                        for (const QString& subkey : nmSecrets[key].keys())
+                        {
+                            nmSettings[key][subkey] = nmSecrets[key][subkey];
+                            qDebug() << "Changed settings key from secret key:" << nmSettings[key];
+                        }
+                    }
+                    nmSettings["802-11-wireless-security"]["psk-flags"] = 0;
+                }
+
+                qDebug() << "Existing password:" << existingPassword;
+            }
+
+            qDebug() << "reached here";
+
+            // If there is no existing connection for this access point, add a new one
+            if (networkConnection == nullptr)
+            {
+                qDebug() << "Requesting access point password";
+
+                QString wifiAccessPointPassword = requestAccessPointPassword(wifiAccessPoint->ssid);
+
+                qDebug() << "Configuring connection settings";
+    
+                ConnectionSettings settings;
+                settings["connection"] = ConnectionSettingsItem{
+                    { "type", "802-11-wireless" },
+                    { "uuid", QUuid::createUuid().toString().remove('{').remove('}')},
+                    { "id", wifiAccessPoint->ssid }
+                };
+                settings["802-11-wireless"] = ConnectionSettingsItem{
+                    { "ssid", QByteArray(wifiAccessPoint->ssid.toUtf8()) },
+                    { "security", "802-11-wireless-security" },
+                    { "mode", "infrastructure" }
+                };
+                settings["802-11-wireless-security"] = ConnectionSettingsItem{
+                    { "key-mgmt", "wpa-psk" },
+                    { "psk", wifiAccessPointPassword},
+                    { "psk-flags", 0 }
+                };
+                settings["ipv4"] = ConnectionSettingsItem{
+                    { "method", "auto"}
+                };
+                settings["ipv6"] = ConnectionSettingsItem{
+                    { "method", "auto"}
+                };
+
+                qDebug() << "Using connection settings:";
+                for (const QString& key : settings.keys())
+                {
+                    qDebug() << settings[key];
+                }            
+
+                QDBusReply<QDBusObjectPath> addConnectionReply = nmSettingsInterface.call("AddConnection", QVariant::fromValue(settings));
+
+                if (addConnectionReply.isValid())
+                {
+                    networkConnection = new NetworkConnection(addConnectionReply.value(), networkDevice, wifiAccessPoint);
+                    qDebug() << "Added new connection for SSID:" << wifiAccessPoint->ssid;
+                } else {
+                    qCritical() << "Failed to add connection:" << addConnectionReply.error().message();
+                    return;
+                }
+            }
+
+            if (networkConnection)
+            {
+                if (networkConnection->dbusPath.path().isEmpty())
+                {
+                    qCritical() << "Empty connection path";
+                    return;
+                }
+            } else {
+                qCritical() << "NetworkConnection object does not exist";
+                return;
+            }
+
+            updateConnectionSettings(networkConnection->dbusPath, nmSettings);
+
+            QDBusReply<QDBusObjectPath> activateConnectionReply = nmInterface.call("ActivateConnection",
+                QVariant::fromValue(networkConnection->dbusPath),
+                QVariant::fromValue(networkDevice->dbusPath),
+                QVariant::fromValue(QDBusObjectPath("/"))
+            );
+
+            if (activateConnectionReply.isValid())
+            {
+                qDebug() << "Successfully initiated Wi-Fi connection";
+
+            } else {
+                qCritical() << "Could not activate connection:" << activateConnectionReply.error().message();
+            }
+        } else {
+            qWarning() << "Error: did not select Wi-Fi access point to connect";
+        }
+    // If the selected network device is ethernet
+    } else if (networkDevice->type == "Ethernet") {
+
+        // List all connections
+        QDBusReply<QList<QDBusObjectPath>> listConnectionsReply = nmSettingsInterface.call("ListConnections");
+        if (!listConnectionsReply.isValid()) {
+            qWarning() << "Failed to get list connections:" << listConnectionsReply.error().message();
+            return;
+        }
+
+        ConnectionSettings nmSettings;
+        nmSettings["connection"] = ConnectionSettingsItem{
+            { "type", "802-3-ethernet" },
+            { "uuid",  QUuid::createUuid().toString().remove('{').remove('}') },
+            { "id", networkDevice->type }
+        };
+        nmSettings["ipv4"] = ConnectionSettingsItem{
+            { "method", "auto" }
+        };
+        nmSettings["ipv6"] = ConnectionSettingsItem{
+            { "method", "auto" }
+        };
+
+        
+        QDBusReply<QDBusObjectPath> addConnectionReply = nmSettingsInterface.call("AddConnection", QVariant::fromValue(nmSettings));
+        if (!addConnectionReply.isValid())
+        {
+            qCritical() << "Failed to add Ethernet connection:" << addConnectionReply.error().message();
+            return;
+        }
+
+        NetworkConnection* newNetworkConnection = new NetworkConnection(addConnectionReply.value(), networkDevice);
+        networkConnections.push_back(newNetworkConnection);
+
+        QDBusReply<QDBusObjectPath> activateConnectionReply = nmInterface.call("ActivateConnection",
+            QVariant::fromValue(newNetworkConnection->dbusPath),
+            QVariant::fromValue(networkDevice->dbusPath),
+            QVariant::fromValue(QDBusObjectPath("/"))
+        );
+
+        if (activateConnectionReply.isValid())
+        {
+            qDebug() << "Successfully initiated Ethernet connection";
+        } else {
+            qCritical() << "Could not activate Ethernet connection" << activateConnectionReply.error().message();
+        }
+    }
+}
+
+QString NetworkPage::requestAccessPointPassword(const QString& wifiAccessPoint)
+{
+    bool wifiAccessPointPasswordSent;
+
+    QString wifiAccessPointPassword = QInputDialog::getText(
+        nullptr,
+        "Password for " + wifiAccessPoint,
+        "Enter the password for access point " + wifiAccessPoint,
+        QLineEdit::Password,
+        "",
+        &wifiAccessPointPasswordSent
+    );
+
+    if (!wifiAccessPointPasswordSent || wifiAccessPointPassword.isEmpty())
+    {
+        qDebug() << "Password input was cancelled or is empty";
+        return QString();
+    }
+
+    return wifiAccessPointPassword;
+}
+
+void NetworkPage::updateConnectionSettings(QDBusObjectPath connectionPath, ConnectionSettings nmSettings)
+{
+    qDebug() << "Using connection settings:";
+    for (const QString& key : nmSettings.keys())
+    {
+        qDebug() << nmSettings[key];
+    }
+
+
+    QDBusInterface connectionInterface(NM_SERVICE, connectionPath.path(), "org.freedesktop.NetworkManager.Settings.Connection", QDBusConnection::systemBus());
+    QDBusReply<void> updateSettingsReply = connectionInterface.call("Update", QVariant::fromValue(nmSettings));
+    if (updateSettingsReply.isValid())
+    {
+        qDebug() << "Updated settings for existing connection";
+    } else {
+        qCritical() << "Failed to update connection settings:" << updateSettingsReply.error().message();
+    }
+    QDBusReply<void> saveReply = connectionInterface.call("Save");
+    if (saveReply.isValid())
+    {
+        qDebug() << "Saved settings and secrets for existing connection";
+    } else {
+        qCritical() << "Failed to save connection settings:" << saveReply.error().message();
+    }
 }

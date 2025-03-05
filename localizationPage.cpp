@@ -1,67 +1,64 @@
 #include "keymaps.hpp"
 #include "timezones.hpp"
-#include "mainWindow.hpp"
+#include "localizationPage.hpp"
 #include <QLineEdit>
 
-
-QWidget* MainWindow::pageCreateLocalization()
+LocalizationPage::LocalizationPage(QWidget* parent) : QWidget(parent)
 {
-    WindowPage* page = new WindowPage(
+    page = new PageContent(
         "Seja bem vindo ao instalador do DelphinOS",
         "Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável.\
 Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário\
-e clique em próximo para avançar para a próxima etapa."
+e clique em próximo para avançar para a próxima etapa.",
+        640, 360
     );
 
-    QWidget* localizationWidget = new QWidget(this);
-    QFormLayout* localizationFormLayout = new QFormLayout(localizationWidget);
-    localizationFormLayout->setHorizontalSpacing(25); 
+    formLayout = new QFormLayout;
+    formLayout->setHorizontalSpacing(25); 
 
     // Language option
-    QComboBox* languageOptionCombobox = new QComboBox(this);
+    languageOptionCombobox = new QComboBox;
     languageOptionCombobox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     languageOptionCombobox->addItem("Português");
     languageOptionCombobox->addItem("English");
 
     // Keyboard layout and variant options
-    QHBoxLayout* keymapOptionLayout = new QHBoxLayout();
-    QComboBox* keymapLayoutCombobox = new QComboBox(this);
-    populateKeymapLayouts(keymapLayoutCombobox);
+    keymapOptionLayout = new QHBoxLayout;
+    keymapLayoutCombobox = new QComboBox;
+    populateKeymapLayouts();
 
-    QComboBox* keymapVariantCombobox = new QComboBox(this);
+    keymapVariantCombobox = new QComboBox;
 
-    updateKeymapLayout(keymapLayoutCombobox, keymapVariantCombobox);
+    updateKeymapLayout();
     connect(keymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, keymapLayoutCombobox, keymapVariantCombobox](const int)
+        [this](const int)
         {
             keymapLayoutChanged = true;
-            updateKeymapLayout(keymapLayoutCombobox, keymapVariantCombobox);
+            updateKeymapLayout();
             keymapLayoutChanged = false;
         }
     );
     connect(keymapVariantCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, keymapLayoutCombobox, keymapVariantCombobox](const int)
+        [this](const int)
         {
             if (!keymapLayoutChanged) {
-                updateKeymapVariant(keymapLayoutCombobox, keymapVariantCombobox);
+                updateKeymapVariant();
             }
         }
     );
 
-    QLineEdit* keymapTestBox = new QLineEdit;
+    keymapTestBox = new QLineEdit;
 
     keymapOptionLayout->addWidget(keymapLayoutCombobox);
     keymapOptionLayout->addWidget(keymapVariantCombobox);
 
     // Timezone options
-    QComboBox* timezoneCombobox = new QComboBox(this);
-    populateTimezones(timezoneCombobox);
-    timezoneCombobox->property("placeholderRemoved").toBool();
-    timezoneCombobox->setProperty("placeholderRemoved", false);
+    timezoneCombobox = new QComboBox;
+    populateTimezones();
     connect(timezoneCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
-        [this, timezoneCombobox](const int timezoneComboboxIndex)
+        [this](const int)
         {
-            MainWindow::updateTimezone(timezoneCombobox, timezoneComboboxIndex);
+            LocalizationPage::updateTimezone();
         }
     );
 
@@ -77,50 +74,49 @@ e clique em próximo para avançar para a próxima etapa."
     QLabel* timezoneOptionLabel = new QLabel("Fuso-horário:");
     timezoneOptionLabel->setMinimumWidth(timezoneOptionLabel->sizeHint().width());
 
-    localizationFormLayout->addRow(languageOptionLabel, languageOptionCombobox);
-    localizationFormLayout->addRow(keymapOptionLabel, keymapOptionLayout);
-    localizationFormLayout->addRow(keymapTestLabel, keymapTestBox);
-    localizationFormLayout->addRow(timezoneOptionLabel, timezoneCombobox);
+    formLayout->addRow(languageOptionLabel, languageOptionCombobox);
+    formLayout->addRow("Layout do teclado:", keymapOptionLayout);
+    formLayout->addRow(keymapTestLabel, keymapTestBox);
+    formLayout->addRow(timezoneOptionLabel, timezoneCombobox);
 
-
-    page->addWidget(localizationWidget);
-
-    return page;
+    page->addStretch();
+    page->addLayout(formLayout);
+    page->addStretch();
 }
 
-void MainWindow::updateLanguage()
+void LocalizationPage::updateLanguage()
 {
 
 }
 
-void MainWindow::populateKeymapLayouts(QComboBox* keymapOptionCombobox)
+void LocalizationPage::populateKeymapLayouts()
 {
+
     std::string layoutsPath = "/usr/share/X11/xkb/symbols/";
     QStringList layoutList;
     for (const auto &file : std::filesystem::directory_iterator(layoutsPath))
     {
-        std::string layoutFilename = file.path().filename();
-        QString layoutFilenameQStr = QString::fromStdString(layoutFilename);
-        if (getLayoutName(layoutFilenameQStr) != layoutFilenameQStr) {
-            layoutList << getLayoutName(layoutFilenameQStr);
+        QString layoutFilename = QString::fromStdString(file.path().filename());
+        if (getLayoutName(layoutFilename) != layoutFilename) {
+            layoutList << getLayoutName(layoutFilename);
         }
         layoutList.sort(Qt::CaseInsensitive);
     }
-    keymapOptionCombobox->addItems(layoutList);
-    std::string currentKeymapLayout = getCurrentKeymapLayout();
-    if (!currentKeymapLayout.empty())
+    keymapLayoutCombobox->addItems(layoutList);
+    QString currentKeymapLayout = getCurrentKeymapLayout();
+    if (!currentKeymapLayout.isEmpty())
     {
-        std::cout << "Current keymap layout in use: " << currentKeymapLayout.c_str() << std::endl;
-        if (keymapOptionCombobox->findText(getLayoutName(QString::fromStdString(currentKeymapLayout))))
+        qDebug() << "Current keymap layout in use: " << currentKeymapLayout;
+        if (keymapLayoutCombobox->findText(getLayoutName(currentKeymapLayout)))
         {
-            keymapOptionCombobox->setCurrentText(getLayoutName(QString::fromStdString(currentKeymapLayout)));
+            keymapLayoutCombobox->setCurrentText(getLayoutName(currentKeymapLayout));
         }
     } else { 
-        std::cout << "Current keymap layout could not be determined." << std::endl;
+        qWarning() << "Current keymap layout could not be determined";
     }
 }
 
-void MainWindow::updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
+void LocalizationPage::updateKeymapLayout()
 {
     QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
 
@@ -150,7 +146,7 @@ void MainWindow::updateKeymapLayout(QComboBox* keymapLayoutCombobox, QComboBox* 
     return;
 }
 
-void MainWindow::updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox* keymapVariantCombobox)
+void LocalizationPage::updateKeymapVariant()
 {
     QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
     QString variantCode = getVariantCode(keymapVariantCombobox->currentText());
@@ -159,7 +155,7 @@ void MainWindow::updateKeymapVariant(QComboBox* keymapLayoutCombobox, QComboBox*
     system(setxkbmapCommand.c_str());
 }
 
-void MainWindow::populateTimezones(QComboBox* timezoneCombobox)
+void LocalizationPage::populateTimezones()
 {
     timezoneCombobox->setInsertPolicy(QComboBox::InsertAtBottom);
     timezoneCombobox->addItem("Selecione o seu fuso-horário");
@@ -170,15 +166,15 @@ void MainWindow::populateTimezones(QComboBox* timezoneCombobox)
     timezoneCombobox->setCurrentIndex(0);
 }
 
-void MainWindow::updateTimezone(QComboBox* timezoneCombobox, int index)
+void LocalizationPage::updateTimezone()
 {
-    if (index != 0 && timezoneCombobox->count() > timezoneList.size())
+    if (timezoneCombobox->currentIndex() != 0 && timezoneCombobox->count() > timezoneList.size())
     {
         timezoneCombobox->removeItem(0);
         return;
     }
 
-    QString selectedTimezone = timezoneList.at(index).first;
+    QString selectedTimezone = timezoneList.at(timezoneCombobox->currentIndex()).first;
     std::cout << "Selected timezone: " + selectedTimezone.toStdString() << std::endl;
 
     // Invert + and - symbols for UTC model
