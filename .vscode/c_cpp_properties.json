@@ -10,9 +10,7 @@
                 "/usr/include/qt/QtWidgets",
                 "/usr/include/qt6/QtGui",
                 "/usr/include/glib-2.0",
-                //"/usr/include/libnm",
                 "/usr/include/qt/QtDBus",
-                //"/usr/include/KF6/NetworkManagerQt",
                 "/usr/lib/glib-2.0/include",
                 "/usr/include/kpmcore"
             ],
