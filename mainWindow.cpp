@@ -20,16 +20,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         if (windowHandle()) {
             screen = windowHandle()->screen();
             screenGeometry = screen->geometry();
+
+            qDebug() << "Screen geometry: " << screenGeometry;
+
             if (screen) {
                 connect(screen, &QScreen::geometryChanged,
                         this, &MainWindow::onScreenGeometryChanged);
             }
+        } else {
+            qWarning() << "windowHandle() not yet initialized.";
         }
         windowCenter = QPoint(screenGeometry.width() / 2, screenGeometry.height() / 2);
         centerWindow();
     });
 
-    
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     
@@ -75,8 +79,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(buttonBack, &QPushButton::clicked, this, &MainWindow::onBackClicked);
     connect(buttonNext, &QPushButton::clicked, this, &MainWindow::onNextClicked);
-
 };
+
 
 void MainWindow::onScreenGeometryChanged(const QRect& geometry)
 {

@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt and required components
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
 
 # Find GLib and GIO using pkg-config
 find_package(PkgConfig REQUIRED)

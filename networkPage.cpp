@@ -45,7 +45,7 @@ NetworkPage::NetworkPage(QWidget* parent) : QWidget(parent)
     page = new PageContent(
         "Configurar conexão de rede",
         "Selecione a rede que deseja utilizar para instalar o sistema.",
-        480, 640
+        480, 640, this
     );
 
     formLayout = new QFormLayout;

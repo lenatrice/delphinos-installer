@@ -112,20 +112,24 @@ private:
     PageTitle* title;
     PageDescription* description;
     QSize pageSize;
-
+    
 public:
-    PageContent(const QString& _title, const QString& _description, int width, int height)
+
+    PageContent(const QString& _title, const QString& _description, int width, int height, QWidget* _ownerObject) : QWidget(_ownerObject)
     {
+        pageSize = QSize(width, height);
+
         layout = new QVBoxLayout(this);
+        
         title = new PageTitle(_title, this);
         layout->addWidget(title, 0, Qt::AlignTop);
-
+        
         description = new PageDescription(_description, this);
         layout->addWidget(description, 0, Qt::AlignTop);
-
+        
         layout->setAlignment(Qt::AlignTop);
-
-        pageSize = QSize(width, height);
+        
+        layout->addSpacing(20);
     }
 
     ~PageContent() override = default;
@@ -150,9 +154,9 @@ public:
         layout->addWidget(widget, 0, Qt::AlignVCenter | Qt::AlignLeft);
     }
 
-    void addLayout(QLayout* widget)
+    void addLayout(QLayout* newLayout)
     {
-        layout->addLayout(widget);
+        layout->addLayout(newLayout);
     }
 
     QSize getSize()

@@ -7,10 +7,10 @@ LocalizationPage::LocalizationPage(QWidget* parent) : QWidget(parent)
 {
     page = new PageContent(
         "Seja bem vindo ao instalador do DelphinOS",
-        "Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável.\
-Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário\
+        "Sistema operacional baseado em ArchLinux, customizado para a sua conveniência e completamente personalizável. \
+Esse instalador irá lhe guiar por todas as etapas da instalação. Selecione seu idioma, layout do teclado e fuso-horário \
 e clique em próximo para avançar para a próxima etapa.",
-        640, 360
+        640, 360, this
     );
 
     formLayout = new QFormLayout;
@@ -30,6 +30,7 @@ e clique em próximo para avançar para a próxima etapa.",
     keymapVariantCombobox = new QComboBox;
 
     updateKeymapLayout();
+
     connect(keymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
         [this](const int)
         {
@@ -38,6 +39,7 @@ e clique em próximo para avançar para a próxima etapa.",
             keymapLayoutChanged = false;
         }
     );
+
     connect(keymapVariantCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
         [this](const int)
         {
@@ -51,6 +53,7 @@ e clique em próximo para avançar para a próxima etapa.",
 
     keymapOptionLayout->addWidget(keymapLayoutCombobox);
     keymapOptionLayout->addWidget(keymapVariantCombobox);
+    keymapOptionLayout->setSpacing(4);
 
     // Timezone options
     timezoneCombobox = new QComboBox;
@@ -62,22 +65,11 @@ e clique em próximo para avançar para a próxima etapa.",
         }
     );
 
-    QLabel* languageOptionLabel = new QLabel("Idioma:");
-    languageOptionLabel->setMinimumWidth(languageOptionLabel->sizeHint().width());
-
-    QLabel* keymapOptionLabel = new QLabel("Layout do teclado:");
-    keymapOptionLabel->setMinimumWidth(keymapOptionLabel->sizeHint().width());
-
-    QLabel* keymapTestLabel = new QLabel("Teste do teclado:");
-    keymapTestLabel->setMinimumWidth(keymapTestLabel->sizeHint().width());
-
-    QLabel* timezoneOptionLabel = new QLabel("Fuso-horário:");
-    timezoneOptionLabel->setMinimumWidth(timezoneOptionLabel->sizeHint().width());
-
-    formLayout->addRow(languageOptionLabel, languageOptionCombobox);
+    formLayout->addRow("Idioma:", languageOptionCombobox);
     formLayout->addRow("Layout do teclado:", keymapOptionLayout);
-    formLayout->addRow(keymapTestLabel, keymapTestBox);
-    formLayout->addRow(timezoneOptionLabel, timezoneCombobox);
+    formLayout->addRow("Teste do teclado:", keymapTestBox);
+    formLayout->addRow("Fuso-horário:", timezoneCombobox);
+    formLayout->setLabelAlignment(Qt::AlignRight);
 
     page->addStretch();
     page->addLayout(formLayout);
