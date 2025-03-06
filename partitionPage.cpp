@@ -33,11 +33,10 @@ PartitionPage::PartitionPage(QWidget* parent) : QWidget(parent)
 
     formLayout->addRow("Dispositivo:", deviceCombobox);
     formLayout->setAlignment(Qt::AlignLeft);
+
     QWidget* dummy = new QWidget;
     formLayout->addRow("Tabela de partições:", dummy);
     formLayout->addRow(partitionTable);
-
-
 
     page->addLayout(formLayout);
 }
@@ -76,8 +75,8 @@ void PartitionPage::initialize()
         deviceCombobox->addItem(device->deviceNode() + " (" + getSize(device) + ")", QVariant::fromValue(device));
     }
 
-    connect(deviceCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this, &PartitionPage::onDeviceChanged);
-    connect(partitionTable, QOverload<QTableWidgetItem*, QTableWidgetItem*>::of(&QTableWidget::currentItemChanged), this, &PartitionPage::onPartitionItemChanged);
+    connect(deviceCombobox, &QComboBox::currentIndexChanged, this, &PartitionPage::onDeviceChanged);
+    connect(partitionTable, &QTableWidget::currentItemChanged, this, &PartitionPage::onPartitionItemChanged);
     deviceCombobox->setCurrentIndex(0);
     onDeviceChanged(0);
 

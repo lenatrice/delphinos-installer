@@ -31,7 +31,7 @@ e clique em próximo para avançar para a próxima etapa.",
 
     updateKeymapLayout();
 
-    connect(keymapLayoutCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+    connect(keymapLayoutCombobox, &QComboBox::currentIndexChanged, this,
         [this](const int)
         {
             keymapLayoutChanged = true;
@@ -40,7 +40,7 @@ e clique em próximo para avançar para a próxima etapa.",
         }
     );
 
-    connect(keymapVariantCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+    connect(keymapVariantCombobox, &QComboBox::currentIndexChanged, this,
         [this](const int)
         {
             if (!keymapLayoutChanged) {
@@ -58,7 +58,7 @@ e clique em próximo para avançar para a próxima etapa.",
     // Timezone options
     timezoneCombobox = new QComboBox;
     populateTimezones();
-    connect(timezoneCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this,
+    connect(timezoneCombobox, &QComboBox::currentIndexChanged, this,
         [this](const int)
         {
             LocalizationPage::updateTimezone();

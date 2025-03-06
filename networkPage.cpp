@@ -153,7 +153,6 @@ void NetworkPage::populateNetworkDevices()
         newNetworkDevice = new NetworkDevice(devicePath, deviceName, networkTypeMap.value(deviceType, "Unknown"));
         networkDevices.push_back(newNetworkDevice);
         deviceName += " (" + networkTypeMap.value(deviceType, "Unknown") + ")";
-
         QListWidgetItem* newItem = new QListWidgetItem(deviceName);
         newItem->setData(networkDeviceObjRole, QVariant::fromValue(newNetworkDevice));
         deviceList->addItem(newItem);
@@ -363,8 +362,6 @@ void NetworkPage::connectNetwork()
 
                 qDebug() << "Existing password:" << existingPassword;
             }
-
-            qDebug() << "reached here";
 
             // If there is no existing connection for this access point, add a new one
             if (networkConnection == nullptr)
