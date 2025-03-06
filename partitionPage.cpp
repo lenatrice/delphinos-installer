@@ -1,7 +1,6 @@
 #include "partitionPage.hpp"
 #include <kpmcore/backend/corebackendmanager.h>
 #include <kpmcore/backend/corebackend.h>
-#include <kpmcore/core/device.h>
 #include <kpmcore/core/partitiontable.h>
 #include <kpmcore/core/devicescanner.h>
 #include <kpmcore/core/operationstack.h>
@@ -48,6 +47,9 @@ void PartitionPage::initialize()
     if (hasInitialized) { return; }
     hasInitialized = true;
 
+    page->setRequireConfirmation(true);
+    page->setCanAdvance(false);
+
     qDebug() << "Initializing partition page";
 
     QByteArray env = qgetenv("KPMCORE_BACKEND");
@@ -69,9 +71,9 @@ void PartitionPage::initialize()
 
     QList<Device*> devices = operationStack->previewDevices();
 
-    for (Device* device : devices)
+    for (const Device* device : devices)
     {   
-        deviceCombobox->addItem(device->deviceNode(), QVariant::fromValue(device));
+        deviceCombobox->addItem(device->deviceNode() + " (" + getSize(device) + ")", QVariant::fromValue(device));
     }
 
     connect(deviceCombobox, QOverload<const int>::of(&QComboBox::currentIndexChanged), this, &PartitionPage::onDeviceChanged);
@@ -84,18 +86,30 @@ void PartitionPage::initialize()
 void PartitionPage::onDeviceChanged(int index)
 {
     const Device* device = deviceCombobox->currentData(Qt::UserRole).value<Device*>();
+
+    if (!device)
+    {
+        qWarning() << "Invalid device pointer";
+    }
+
     const PartitionTable* partTable = device->partitionTable();
 
+    if (!partTable)
+    {
+        qWarning() << "Invalid partition table";
+    }
+
+    partitionTable->clearContents();
     partitionTable->setRowCount(0);
 
     for (const Partition* part : partTable->children()) {
         const QString partNode = part->deviceNode();
         const QString partLabel = part->label();
         const QString partType = part->fileSystem().name();
-        const qint64 partSectorSize = part->sectorSize();
-        const QString partSizeGb = QString::number((static_cast<double>(part->sectorSize()) * static_cast<double>(part->length()) / 1000000000), 'f', 2) + " GB";
+        const QString partSizeGb = getSize(part);
 
         int row = partitionTable->rowCount();
+        partitionTable->insertRow(row);
 
         QTableWidgetItem* partNodeItem = new QTableWidgetItem(partNode);
         partNodeItem->setData(partitionRole, QVariant::fromValue(part));
@@ -106,7 +120,6 @@ void PartitionPage::onDeviceChanged(int index)
         QTableWidgetItem* partSizeItem = new QTableWidgetItem(partSizeGb);
         partSizeItem->setData(partitionRole, QVariant::fromValue(part));
 
-        partitionTable->insertRow(row);
 
         partitionTable->setItem(row, 0, partNodeItem);
         partitionTable->setItem(row, 1, partLabelItem);
@@ -119,5 +132,47 @@ void PartitionPage::onDeviceChanged(int index)
 
 void PartitionPage::onPartitionItemChanged(const QTableWidgetItem* currentItem, const QTableWidgetItem* previousItem)
 {
+    page->setConfirmationMessage("");
+    page->setCanAdvance(false);
 
+    if (!currentItem)
+    {
+        return;
+    }
+
+    const QVariant itemData = currentItem->data(partitionRole);
+
+    if (!itemData.canConvert<const Partition*>())
+    {
+        qWarning() << "Item does not contain a valid Partition pointer";
+        return;
+    }
+
+    const Partition* partition = itemData.value<const Partition*>();
+
+    if (!partition)
+    {
+        qWarning() << "Selected Partition is null";
+        return;
+    }
+
+    if (partition->roles().has(PartitionRole::Unallocated))
+    {
+        qDebug() << "Selected valid free space for installation";
+    } else {
+        qWarning() << "Selected partition is not free space";
+        return;
+    }
+
+    if (static_cast<double>(partition->capacity()) / GiB < 10) // If selected space has less than 10GiB, issue a warning
+    {
+        page->setRequireWarning(true);
+        page->setWarningMessage("O espaço livre selecionado de " + getSize(partition) + " pode ser insuficiente para instalar o sistema, " + 
+        "ou pode gerar problemas futuros conforme mais espaço for necessário. É recomendado que você selecione um espaço livre maior do que 10 GiB.\n\nContinuar mesmo assim?");
+    } else {
+        page->setRequireWarning(false);
+    }
+
+    page->setConfirmationMessage("Instalar DelphinOS em espaço livre de " + getSize(partition) + "?");
+    page->setCanAdvance(true);
 }

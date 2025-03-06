@@ -58,6 +58,10 @@ private slots:
     // Screen geometry change slot
     void onScreenGeometryChanged(const QRect& geometry);
 
+    // Page management slots
+    void onPageChanged(int index);
+    void onCanAdvanceChanged(bool canAdvance);
+
     // Navigation slots
     void onNextClicked();
     void onBackClicked();
@@ -112,6 +116,17 @@ private:
     PageTitle* title;
     PageDescription* description;
     QSize pageSize;
+
+    // Whether next button is clickable to advance the page. By default, canAdvance is true.
+    bool canAdvance = true;
+
+    // Whether the page requires confirmation to advance. By default, requireConfirmation is false.
+    bool requireConfirmation = false;
+    QString confirmationMessage = "Confirmar?";
+
+    // Whether the page issues a warning before continuing. By default, no warning is issued.
+    bool requireWarning = false;
+    QString warningMessage = "";
     
 public:
 
@@ -163,6 +178,69 @@ public:
     {
         return pageSize;
     }
+
+    // Functions for controlling and checking whether page can be advanced
+
+    void setCanAdvance(bool _canAdvance)
+    {
+        canAdvance = _canAdvance;
+        emit canAdvanceChanged(canAdvance);
+    }
+
+    bool getCanAdvance() 
+    {
+        return canAdvance;
+    }
+
+
+    // Functions for controlling and checking confirmation requirement and its message
+
+    void setRequireConfirmation(bool _requireConfirmation)
+    {
+        requireConfirmation = _requireConfirmation;
+    }
+
+    bool getRequireConfirmation()
+    {
+        return requireConfirmation;
+    }
+
+    void setConfirmationMessage(QString _confirmationMessage)
+    {
+        confirmationMessage = _confirmationMessage;
+    }
+    
+    QString getConfirmationMessage()
+    {
+        return confirmationMessage;
+    }
+
+
+    // Functions for controlling and checking warning requirement and its message
+
+    void setRequireWarning(bool _requireWarning)
+    {
+        requireWarning = _requireWarning;
+    }
+
+    bool getRequireWarning()
+    {
+        return requireWarning;
+    }
+
+    void setWarningMessage(QString _warningMessage)
+    {
+        warningMessage = _warningMessage;
+    }
+
+    QString getWarningMessage()
+    {
+        return warningMessage;
+    }
+
+
+signals:
+    void canAdvanceChanged(bool _canAdvance);
 };
 
 #endif //MAINWINDOW_H

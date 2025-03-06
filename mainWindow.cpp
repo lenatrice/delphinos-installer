@@ -10,6 +10,7 @@
 #include <QPen>
 #include <QBrush>
 #include <QPainterPath>
+#include <QDialogButtonBox>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -54,10 +55,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     PartitionPage* partitionPage = new PartitionPage(this);
     pageList.append(partitionPage->getPage());
 
+    PageContent* emptyPage = new PageContent("Página vazia", "Para fins de teste", 640, 480, this);// empty last page. For testing purposes.
+    pageList.append(emptyPage);
+
     for (PageContent* page : pageList)
     {
         pageStack->addWidget(page);
     }
+
+    connect(pageStack, &QStackedWidget::currentChanged, this, &MainWindow::onPageChanged);
 
     pageStack->setCurrentIndex(0);
     setFixedSize(pageList[0]->getSize());
@@ -79,14 +85,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(buttonBack, &QPushButton::clicked, this, &MainWindow::onBackClicked);
     connect(buttonNext, &QPushButton::clicked, this, &MainWindow::onNextClicked);
-};
+}
+
+
+
+void MainWindow::onPageChanged(int index)
+{
+    connect(pageList[index], &PageContent::canAdvanceChanged, this, &MainWindow::onCanAdvanceChanged);
+    buttonNext->setEnabled(pageList[index]->getCanAdvance());
+}
+
+void MainWindow::onCanAdvanceChanged(bool canAdvance)
+{
+    if (canAdvance) buttonNext->setEnabled(true); else buttonNext->setEnabled(false);
+}
 
 
 void MainWindow::onScreenGeometryChanged(const QRect& geometry)
 {
     screenGeometry = geometry;
     centerWindow();
-};
+}
+
 
 // Custom window background 
 void MainWindow::paintEvent(QPaintEvent* event)
@@ -115,7 +135,7 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && event->pos().y() <= dragAreaHeight)
     {
         dragging = true;
-        dragPosition = event->globalPos() - this->frameGeometry().topLeft();
+        dragPosition = event->globalPosition().toPoint() - this->frameGeometry().topLeft();
         event->accept();
     }
     else
@@ -128,7 +148,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
 {
     if (dragging == true && event->buttons() & Qt::LeftButton)
     {
-        this->move(event->globalPos() - dragPosition);
+        this->move(event->globalPosition().toPoint() - dragPosition);
         event->accept();
     }
     else
@@ -159,8 +179,6 @@ void MainWindow::moveEvent(QMoveEvent* event)
 // Keep window centralized to its position when resizing
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    qDebug() << "Resize event:" << event->size();
-
     QMainWindow::resizeEvent(event);
 
     pageList[pageStack->currentIndex()]->updateGeometry();
@@ -190,14 +208,30 @@ void MainWindow::onBackClicked()
 
 void MainWindow::onNextClicked()
 {
-    qDebug() << "Page:" << pageStack->currentIndex() + 1 << "/" << pageStack->count() ;
+    PageContent* currentPage = pageList[pageStack->currentIndex()];
+
+    if (currentPage->getRequireWarning())
+    {
+        QMessageBox::StandardButton warningDialog;
+        warningDialog = QMessageBox::warning(this, "Atenção", currentPage->getWarningMessage(), QMessageBox::Ok | QMessageBox::Cancel);
+
+        if (warningDialog == QMessageBox::Cancel) return;
+    }
+
+    if (currentPage->getRequireConfirmation())
+    {
+        QMessageBox::StandardButton confirmationDialog;
+        confirmationDialog = QMessageBox::information(this, "Confirmação", currentPage->getConfirmationMessage(), QMessageBox::Ok | QMessageBox::Cancel);
+
+        if (confirmationDialog == QMessageBox::Cancel) return;
+    }
+
     if (pageStack->currentIndex() < pageStack->count() - 1)
     {
         int newIndex = pageStack->currentIndex() + 1;
         pageStack->setCurrentIndex(newIndex);
         setFixedSize(pageList[newIndex]->getSize());
-    } else
-    {
+    } else {
         close();
     }
 }

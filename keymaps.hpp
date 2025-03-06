@@ -483,11 +483,10 @@ QString getKeymapLayoutDefaultVariant(const QString& keymapLayout)
     return 0;
 }
 
-QString getCurrentKeymapLayout()
-{
+QString getCurrentKeymapLayout() {
     std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("setxkbmap -query", "r"), pclose);
+    auto closer = [](FILE* f) { return pclose(f); };
+    std::unique_ptr<FILE, decltype(closer)> pipe(popen("setxkbmap -query", "r"), closer);
 
     if (!pipe) {
         std::cerr << "Failed to execute command!" << std::endl;
@@ -497,15 +496,12 @@ QString getCurrentKeymapLayout()
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         std::string line(buffer.data());
 
-        if (line.find("layout:") != std::string::npos)
-        {
+        if (line.find("layout:") != std::string::npos) {
             std::istringstream iss(line);
             std::string key, layout;
             iss >> key >> layout;
             return QString::fromStdString(layout);
         }
-
-        result += buffer.data();
     }
 
     return "";
