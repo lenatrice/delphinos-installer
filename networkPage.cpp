@@ -22,7 +22,7 @@ static const QMap<int, QString> networkTypeMap
     { 14, "MACsec" },
     { 15, "Virtual Ethernet" },
     { 16, "Virtual Network" },
-    { 17, "Point-to-Point Prococol" },
+    { 17, "Point-to-Point Protocol" },
     { 18, "OVS Bridge" },
     { 19, "OVS Port" },
     { 20, "OVS Interface" },
@@ -35,7 +35,7 @@ static const QMap<int, QString> networkTypeMap
     { 27, "VRF" },
     { 28, "Lowpan" },
     { 29, "Dummy" },
-    { 30, "Point-to-Point Prococol over Ethernet" },
+    { 30, "Point-to-Point Protocol over Ethernet" },
     { 31, "InfiniBand" },
     { 32, "Loopback" },
 };
@@ -91,7 +91,6 @@ NetworkPage::NetworkPage(QWidget* parent) : QWidget(parent)
         }
     );
     
-    page->addStretch();
     page->addLayout(formLayout);
     page->addLayout(functionButtons);
 }

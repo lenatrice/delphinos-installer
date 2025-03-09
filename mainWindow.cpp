@@ -2,6 +2,7 @@
 #include "localizationPage.hpp"
 #include "networkPage.hpp"
 #include "partitionPage.hpp"
+#include "packagesPage.hpp"
 #include <cstdlib>
 #include <unistd.h>
 #include <vector>
@@ -45,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     mainLayout->addWidget(pageStack, 0, Qt::AlignTop);
     
     // Window pages
+    PackagesPage* packagesPage = new PackagesPage(this);
+    pageList.append(packagesPage->getPage());
 
     LocalizationPage* localizationPage = new LocalizationPage(this);
     pageList.append(localizationPage->getPage());
@@ -54,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     PartitionPage* partitionPage = new PartitionPage(this);
     pageList.append(partitionPage->getPage());
+
 
     PageContent* emptyPage = new PageContent("Página vazia", "Para fins de teste", 640, 480, this);// empty last page. For testing purposes.
     pageList.append(emptyPage);

@@ -113,6 +113,7 @@ class PageContent : public QWidget
 Q_OBJECT
 private:
     QVBoxLayout* layout;
+    QVBoxLayout* topLayout;
     PageTitle* title;
     PageDescription* description;
     QSize pageSize;
@@ -135,15 +136,17 @@ public:
         pageSize = QSize(width, height);
 
         layout = new QVBoxLayout(this);
+        topLayout = new QVBoxLayout;
         
         title = new PageTitle(_title, this);
-        layout->addWidget(title, 0, Qt::AlignTop);
+        topLayout->addWidget(title, 0, Qt::AlignTop);
         
         description = new PageDescription(_description, this);
-        layout->addWidget(description, 0, Qt::AlignTop);
+        topLayout->addWidget(description, 0, Qt::AlignTop);
         
-        layout->setAlignment(Qt::AlignTop);
-        
+        layout->addLayout(topLayout);
+        layout->setAlignment(Qt::AlignLeft);
+
         layout->addSpacing(20);
     }
 
@@ -166,7 +169,7 @@ public:
 
     void addWidget(QWidget* widget)
     {
-        layout->addWidget(widget, 0, Qt::AlignVCenter | Qt::AlignLeft);
+        layout->addWidget(widget, 0, Qt::AlignLeft);
     }
 
     void addLayout(QLayout* newLayout)
@@ -192,7 +195,6 @@ public:
         return canAdvance;
     }
 
-
     // Functions for controlling and checking confirmation requirement and its message
 
     void setRequireConfirmation(bool _requireConfirmation)
@@ -214,7 +216,6 @@ public:
     {
         return confirmationMessage;
     }
-
 
     // Functions for controlling and checking warning requirement and its message
 

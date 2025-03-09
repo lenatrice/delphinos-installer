@@ -26,6 +26,7 @@ set(SOURCES
     networkDBus.cpp
     networkPage.cpp
     partitionPage.cpp
+    packagesPage.cpp
 )
 
 set(HEADERS
@@ -34,6 +35,7 @@ set(HEADERS
     networkDBus.hpp
     networkPage.hpp
     partitionPage.hpp
+    packagesPage.hpp
 )
 
 add_executable(delphinos-installer ${SOURCES} ${HEADERS})

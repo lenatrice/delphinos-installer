@@ -69,7 +69,6 @@ e clique em próximo para avançar para a próxima etapa.",
     formLayout->addRow("Layout do teclado:", keymapOptionLayout);
     formLayout->addRow("Teste do teclado:", keymapTestBox);
     formLayout->addRow("Fuso-horário:", timezoneCombobox);
-    formLayout->setLabelAlignment(Qt::AlignRight);
 
     page->addStretch();
     page->addLayout(formLayout);
@@ -126,13 +125,13 @@ void LocalizationPage::updateKeymapLayout()
     if (keymapVariantCombobox->findText(keymapVariantName) != -1)
     {
         keymapVariantCombobox->setCurrentText(keymapVariantName);
-        std::cout << "Default keyboard variant: " << keymapVariantName.toStdString() << std::endl;
+        qDebug() << "Default keyboard variant: " << keymapVariantName.toStdString();
     } else {
-        std::cout << "Default keyboard layout variant not found." << keymapVariantName.toStdString() << std::endl;
+        qDebug() << "Default keyboard layout variant not found." << keymapVariantName.toStdString();
     }
 
     std::string setxkbmapCommand = "setxkbmap " + layoutCode.toStdString() + " -variant " + defaultKeymapVariant.toStdString();
-    std::cout << "Running: " << setxkbmapCommand << std::endl;
+    qDebug() << "Running: " << setxkbmapCommand;
     system(setxkbmapCommand.c_str());
 
     return;
@@ -143,7 +142,7 @@ void LocalizationPage::updateKeymapVariant()
     QString layoutCode = getLayoutCode(keymapLayoutCombobox->currentText());
     QString variantCode = getVariantCode(keymapVariantCombobox->currentText());
     std::string setxkbmapCommand = "setxkbmap " + layoutCode.toStdString() + " -variant " + variantCode.toStdString();
-    std::cout << "Running: " << setxkbmapCommand << std::endl;
+    qDebug() << "Running: " << setxkbmapCommand;
     system(setxkbmapCommand.c_str());
 }
 
@@ -167,7 +166,7 @@ void LocalizationPage::updateTimezone()
     }
 
     QString selectedTimezone = timezoneList.at(timezoneCombobox->currentIndex()).first;
-    std::cout << "Selected timezone: " + selectedTimezone.toStdString() << std::endl;
+    qDebug() << "Selected timezone: " + selectedTimezone.toStdString();
 
     // Invert + and - symbols for UTC model
     for (QChar &ch : selectedTimezone) {
