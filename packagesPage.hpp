@@ -1,7 +1,7 @@
 #include "mainWindow.hpp"
+#include "loadingAnimation.hpp"
 #include <QButtonGroup>
 #include <QProcess>
-#include <QProgressBar>
 
 #ifndef PACKAGESPAGE_H
 #define PACKAGESPAGE_H
@@ -19,7 +19,7 @@ private:
     };
 
     QList<QString> optionalPackages = {
-         "htop", "nano", "vlc", "qbittorrent", "steam", "firefox", "discord", "spectacle", "wine", "stremio", "obs-studio", "flatpak", "krita", "neofetch"
+         "htop", "nano", "vlc", "qbittorrent", "firefox", "spectacle", "wine", "obs-studio", "flatpak", "krita", "neofetch"
     };
 
     QList<QString> uncheckedPackages = {
@@ -38,10 +38,9 @@ private:
     QPushButton* customInstallationButton;
 
     QProcess* pacstrapProcess;
-    QProgressBar* progressBar;
-    QString accumulatedOutput;
+    LoadingAnimation* installingAnimation;
+    QLabel* installingLabel;
 
-    
 private slots:
     void onPackageListChanged(QListWidgetItem *item);
 

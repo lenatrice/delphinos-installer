@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt and required components
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus Multimedia MultimediaWidgets)
 
 # Find GLib and GIO using pkg-config
 find_package(PkgConfig REQUIRED)
@@ -31,6 +31,7 @@ set(SOURCES
 
 set(HEADERS
     mainWindow.hpp
+    loadingAnimation.hpp
     localizationPage.hpp
     networkDBus.hpp
     networkPage.hpp
@@ -53,6 +54,8 @@ target_link_libraries(delphinos-installer PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::DBus
+    Qt6::Multimedia
+    Qt6::MultimediaWidgets
     ${GLIB_LIBRARIES}
     kpmcore
 )

@@ -1,6 +1,7 @@
 #include "packagesPage.hpp"
 #include <QRegularExpression>
 #include <QDir>
+#include <QApplication>
 
 PackagesPage::PackagesPage(QWidget* parent) : QWidget(parent)
 {
@@ -81,18 +82,24 @@ PackagesPage::PackagesPage(QWidget* parent) : QWidget(parent)
 
     connect(installSystemButton, &QPushButton::clicked, this, &PackagesPage::onInstallSystemButtonClicked);
 
-    QVBoxLayout* progressLayout = new QVBoxLayout;
-    progressLayout->setAlignment(Qt::AlignBottom);
-    progressBar = new QProgressBar;
-    progressBar->setRange(0, 100);
-    progressBar->setValue(0);
-    progressBar->setTextVisible(true);
-    progressLayout->addWidget(progressBar);
-    formLayout->addRow(progressLayout);
+    // Add video player for loading animation
+    QVBoxLayout* installingLayout = new QVBoxLayout;
+    installingLayout->setAlignment(Qt::AlignHCenter);
+    installingAnimation = new LoadingAnimation;
+    installingAnimation->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    installingLabel = new QLabel("Instalando o sistema...");
+    installingLabel->hide();
+    installingLabel->setAlignment(Qt::AlignHCenter);
 
-    // Set up QProcess and its connections
+    installingLayout->addWidget(installingAnimation);
+
+    formLayout->addRow(installingLayout);
+    formLayout->addRow(installingLabel);
+
+    // Initiate pacstrap process
     pacstrapProcess = new QProcess(this);
 
+    // Add layout to the page
     page->addLayout(formLayout);
 }
 
@@ -157,16 +164,14 @@ void PackagesPage::onInstallSystemButtonClicked(bool checked)
         if (item->checkState() == Qt::Checked) packages << item->text();
     }
 
-    // Set up pacstrap command and arguments
     QStringList arguments;
-    arguments << "/mnt/new_root"; // Specify the root directory first
-    arguments.append(packages); // Add the packages to install
+    arguments << "/mnt/new_root";
+    arguments.append(packages);
 
     qDebug() << "Running pacstrap with arguments:" << arguments;
 
     pacstrapProcess = new QProcess(this);
 
-    // Use pkexec to run pacstrap with elevated privileges
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     pacstrapProcess->setProcessEnvironment(env);
 
@@ -175,12 +180,17 @@ void PackagesPage::onInstallSystemButtonClicked(bool checked)
 
     pacstrapProcess->start("pkexec", pkexecArguments);
 
-    connect(pacstrapProcess, &QProcess::readyReadStandardOutput, this, [this]() {
-        qDebug() << pacstrapProcess->readAllStandardOutput();
-    });
+    bool installSpinnerHasStarted = false;
 
-    connect(pacstrapProcess, &QProcess::readyReadStandardError, this, [this]() {
-        qDebug() << pacstrapProcess->readAllStandardError();
+    connect(pacstrapProcess, &QProcess::readyRead, this, [this, installSpinnerHasStarted]() {
+
+        if (!installSpinnerHasStarted)
+        {
+            installingAnimation->start();
+            installingLabel->show();
+        }
+
+        qDebug() << pacstrapProcess->readAll();
     });
 
     connect(pacstrapProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
@@ -196,5 +206,7 @@ void PackagesPage::onInstallSystemButtonClicked(bool checked)
             // Clean up the QProcess object
             pacstrapProcess->deleteLater();
         }
+        installingAnimation->stop();
+        installingLabel->hide();
     });
 }
