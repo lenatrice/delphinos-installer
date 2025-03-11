@@ -38,33 +38,27 @@ chroot_setup() {
   mount -t tmpfs tmpfs "$newroot/tmp" -o mode=1777,strictatime,nodev,nosuid
 }
 
-# Função para desmontar os sistemas de arquivos montados
 chroot_teardown() {
   umount -R "$newroot/proc" "$newroot/sys" "$newroot/run" "$newroot/tmp"
   umount -R --lazy "$newroot/dev"
 }
 
-# Monta os sistemas de arquivos necessários
 chroot_setup
 
-# Copia o keyring do pacman (se existir) para o novo root
 if [ -d /etc/pacman.d/gnupg ]; then
   cp -a /etc/pacman.d/gnupg "$newroot/etc/pacman.d/"
 fi
 
-# Copia o mirrorlist para o novo root (se existir)
 if [ -f /etc/pacman.d/mirrorlist ]; then
   cp /etc/pacman.d/mirrorlist "$newroot/etc/pacman.d/"
 fi
 
 pacman --noconfirm --root "$newroot" --config /etc/pacman.conf -Sy
 
-# Instala os pacotes no novo root
 for pkg in "${packages[@]}"; do
     counter=$((counter + 1))
     echo "INSTALLING:$pkg:$counter:$total"
     pacman --noconfirm --root "$newroot" --config /etc/pacman.conf -S "$pkg"
 done
 
-# Desmonta os sistemas de arquivos
 chroot_teardown
