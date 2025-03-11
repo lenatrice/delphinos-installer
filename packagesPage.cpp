@@ -6,7 +6,7 @@
 PackagesPage::PackagesPage(QWidget* parent) : QWidget(parent)
 {
     page = new PageContent(
-        "Seleção de pacotes", "Escolha os pacotes que deseja instalar no sistema, e clique em \"Instalar\" para prosseguir", 480, 640, this
+        "Seleção de pacotes", "Escolha os pacotes que deseja instalar no sistema, e clique em \"Instalar\" para prosseguir", 760, 640, this
     );
     page->setCanAdvance(false);
 
@@ -16,25 +16,34 @@ PackagesPage::PackagesPage(QWidget* parent) : QWidget(parent)
     packageListWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(packageListWidget, &QListWidget::itemChanged, this, &PackagesPage::onPackageListChanged);
 
-    for (QString package : basicPackages)
+    for (auto it = basicPackages.constBegin(); it != basicPackages.constEnd(); it++)
     {
-        QListWidgetItem* item = new QListWidgetItem(package);
+        QString packageDescription = it.value();
+        packageDescription[0] = packageDescription[0].toUpper();
+        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        item->setData(packageNameRole, it.key());
         item->setFlags(Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
         packageListWidget->addItem(item);
     }
 
-    for (QString package : optionalPackages)
+    for (auto it = optionalPackages.constBegin(); it != optionalPackages.constEnd(); it++)
     {
-        QListWidgetItem* item = new QListWidgetItem(package);
+        QString packageDescription = it.value();
+        packageDescription[0] = packageDescription[0].toUpper();
+        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        item->setData(packageNameRole, it.key());
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
         packageListWidget->addItem(item);
     }
 
-    for (QString package : uncheckedPackages)
+    for (auto it = uncheckedPackages.constBegin(); it != uncheckedPackages.constEnd(); it++)
     {
-        QListWidgetItem* item = new QListWidgetItem(package);
+        QString packageDescription = it.value();
+        packageDescription[0] = packageDescription[0].toUpper();
+        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        item->setData(packageNameRole, it.key());
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Unchecked);
         packageListWidget->addItem(item);
@@ -83,21 +92,10 @@ PackagesPage::PackagesPage(QWidget* parent) : QWidget(parent)
     connect(installSystemButton, &QPushButton::clicked, this, &PackagesPage::onInstallSystemButtonClicked);
 
     // Add video player for loading animation
-    QVBoxLayout* installingLayout = new QVBoxLayout;
-    installingLayout->setAlignment(Qt::AlignHCenter);
-    installingAnimation = new LoadingAnimation;
-    installingAnimation->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    installingLabel = new QLabel("Instalando o sistema...");
-    installingLabel->hide();
-    installingLabel->setAlignment(Qt::AlignHCenter);
+    installationProgress = new QProgressBar;
+    installationProgress->hide();
 
-    installingLayout->addWidget(installingAnimation);
-
-    formLayout->addRow(installingLayout);
-    formLayout->addRow(installingLabel);
-
-    // Initiate pacstrap process
-    pacstrapProcess = new QProcess(this);
+    formLayout->addRow(installationProgress);
 
     // Add layout to the page
     page->addLayout(formLayout);
@@ -158,55 +156,65 @@ void PackagesPage::onInstallBasicAndOptionalButtonClicked(bool checked)
 
 void PackagesPage::onInstallSystemButtonClicked(bool checked)
 {
-    QStringList packages;
-    for (int i = 0; i < packageListWidget->count(); ++i) {
-        QListWidgetItem* item = packageListWidget->item(i);
-        if (item->checkState() == Qt::Checked) packages << item->text();
-    }
+    QStringList installationScriptCommand;
+    installationScriptCommand.append(QApplication::applicationDirPath() + "/systemInstallScript.sh");
+    installationScriptCommand.append(getSelectedPackages());
 
-    QStringList arguments;
-    arguments << "/mnt/new_root";
-    arguments.append(packages);
+    qDebug() << "Running:" << installationScriptCommand;
 
-    qDebug() << "Running pacstrap with arguments:" << arguments;
+    installationProcess = new QProcess(this);
+    installationProcess->start("pkexec", QStringList() << "/bin/bash" << installationScriptCommand);
 
-    pacstrapProcess = new QProcess(this);
+    int totalPackages = getSelectedPackages().size();
 
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    pacstrapProcess->setProcessEnvironment(env);
-
-    QStringList pkexecArguments;
-    pkexecArguments << "pacstrap" << arguments;
-
-    pacstrapProcess->start("pkexec", pkexecArguments);
-
-    bool installSpinnerHasStarted = false;
-
-    connect(pacstrapProcess, &QProcess::readyRead, this, [this, installSpinnerHasStarted]() {
-
-        if (!installSpinnerHasStarted)
-        {
-            installingAnimation->start();
-            installingLabel->show();
-        }
-
-        qDebug() << pacstrapProcess->readAll();
+    connect(installationProcess, &QProcess::started, this, [this, totalPackages](){
+        installationProgress->show();
+        installationProgress->setRange(0, totalPackages);
+        installationProgress->setValue(0);
+        installationProgress->setTextVisible(true);
+        installationProgress->setFormat("Instalando");
     });
 
-    connect(pacstrapProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+    connect(installationProcess, &QProcess::readyReadStandardOutput, this, [this]() {
+        // If there is output from the process (e.g., progress updates from the script)
+        QByteArray output = installationProcess->readAllStandardOutput();
+        
+        // For simplicity, we assume that the output contains the current package being installed
+        // You should adapt this part based on the actual output of your script
+        QString outputStr = QString::fromUtf8(output);
+        if (outputStr.contains("INSTALLING:")) {
+            currentPackageIndex++;
+            installationProgress->setValue(currentPackageIndex);
+
+            QStringList parts = outputStr.split(":");
+            QString pkgName = parts[1];
+
+            QString readableName;
+            if (basicPackages.contains(pkgName)) {
+                readableName = basicPackages[pkgName];
+            } else if (optionalPackages.contains(pkgName)) {
+                readableName = optionalPackages[pkgName];
+            } else if (uncheckedPackages.contains(pkgName)) {
+                readableName = uncheckedPackages[pkgName];
+            } else {
+                readableName = pkgName;  // Default to the package name if not found in any map
+            }
+
+            installationProgress->setFormat("Instalando " + readableName);
+        }
+    });
+
+    connect(installationProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
         if (exitStatus == QProcess::CrashExit) {
-            qDebug() << "pacstrap process crashed.";
+            qDebug() << "Installation process crashed.";
         } else if (exitCode != 0) {
-            qDebug() << "pacstrap finished with error exit code" << exitCode;
+            qDebug() << "Installation finished with error exit code" << exitCode;
             QMessageBox::critical(nullptr, "Error", "There was an error installing the system.");
         } else {
-            qDebug() << "pacstrap installation finished successfully!";
+            qDebug() << "Installation finished successfully!";
             QMessageBox::information(nullptr, "Success", "System installation completed successfully.");
-
-            // Clean up the QProcess object
-            pacstrapProcess->deleteLater();
         }
-        installingAnimation->stop();
-        installingLabel->hide();
+        installationProgress->hide();
+        installationProcess->deleteLater();
     });
 }

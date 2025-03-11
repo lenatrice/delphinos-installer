@@ -61,4 +61,4 @@ target_link_libraries(delphinos-installer PRIVATE
 )
 
 # Install the executable (optional)
-install(TARGETS delphinos-installer DESTINATION bin)
+install(TARGETS delphinos-installer DESTINATION build)

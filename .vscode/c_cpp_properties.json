@@ -3,13 +3,23 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/usr/lib/glib-2.0/**",
+                "/usr/include/glib-2.0",
+                "/usr/include/qt6/**",
+                "/usr/include/qt6/QtWidgets",
+                "/usr/include/qt6/QtGui",
+                "/usr/include/qt6/QtDBus",
+                "/usr/include/qt6/QtCore",
+                "/usr/include/kpmcore",
+                "/usr/include"
             ],
             "defines": [],
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "configurationProvider": "ms-vscode.makefile-tools",
+            "compilerPath": "/usr/bin/g++"
         }
     ],
     "version": 4
