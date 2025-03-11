@@ -21,22 +21,21 @@ if [ ! -d "$newroot" ]; then
   exit 1
 fi
 
-echo "Creating directories in $newroot..."
 mkdir -p "$newroot"/{dev,proc,sys,run,tmp,etc/pacman.d,var/cache/pacman/pkg,var/lib/pacman,log}
 
 chroot_setup() {
-  mount -t proc proc "$newroot/proc" -o nosuid,noexec,nodev || { echo "Erro montando proc"; exit 1; }
-  mount -t sysfs sysfs "$newroot/sys" -o nosuid,noexec,nodev,ro || { echo "Erro montando sys"; exit 1; }
+  mount -t proc proc "$newroot/proc" -o nosuid,noexec,nodev
+  mount -t sysfs sysfs "$newroot/sys" -o nosuid,noexec,nodev,ro
 
   if [ -d "$newroot/sys/firmware/efi/efivars" ]; then
     mount -t efivarfs efivarfs "$newroot/sys/firmware/efi/efivars" -o nosuid,noexec,nodev || echo "Aviso: Erro montando efivarfs"
   fi
 
-  mount --bind /dev "$newroot/dev" || { echo "Erro montando /dev"; exit 1; }
-  mount -t devpts devpts "$newroot/dev/pts" -o mode=0620,gid=5,nosuid,noexec || { echo "Erro montando devpts"; exit 1; }
-  mount -t tmpfs tmpfs "$newroot/dev/shm" -o mode=1777,nosuid,nodev || { echo "Erro montando dev/shm"; exit 1; }
-  mount --bind /run "$newroot/run" || { echo "Erro montando /run"; exit 1; }
-  mount -t tmpfs tmpfs "$newroot/tmp" -o mode=1777,strictatime,nodev,nosuid || { echo "Erro montando tmp"; exit 1; }
+  mount --bind /dev "$newroot/dev"
+  mount -t devpts devpts "$newroot/dev/pts" -o mode=0620,gid=5,nosuid,noexec
+  mount -t tmpfs tmpfs "$newroot/dev/shm" -o mode=1777,nosuid,nodev
+  mount --bind /run "$newroot/run"
+  mount -t tmpfs tmpfs "$newroot/tmp" -o mode=1777,strictatime,nodev,nosuid
 }
 
 # Função para desmontar os sistemas de arquivos montados
