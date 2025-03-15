@@ -26,18 +26,24 @@ set(SOURCES
     networkDBus.cpp
     networkPage.cpp
     partitionPage.cpp
-    packagesPage.cpp
+    installationPage.cpp
 )
 
 set(HEADERS
     mainWindow.hpp
-    loadingAnimation.hpp
+    statusIndicator.hpp
     localizationPage.hpp
     networkDBus.hpp
     networkPage.hpp
     partitionPage.hpp
-    packagesPage.hpp
+    installationPage.hpp
 )
+
+set(SOURCE_DIR ${CMAKE_SOURCE_DIR})
+set(TARGET_DIR ${CMAKE_BINARY_DIR})
+
+file(COPY ${SOURCE_DIR}/systemInstallScript.sh DESTINATION ${TARGET_DIR})
+file(COPY ${SOURCE_DIR}/statusIndicator DESTINATION ${TARGET_DIR})
 
 add_executable(delphinos-installer ${SOURCES} ${HEADERS})
 

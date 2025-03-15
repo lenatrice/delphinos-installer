@@ -2,7 +2,7 @@
 #include "localizationPage.hpp"
 #include "networkPage.hpp"
 #include "partitionPage.hpp"
-#include "packagesPage.hpp"
+#include "installationPage.hpp"
 #include <cstdlib>
 #include <unistd.h>
 #include <vector>
@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     mainLayout->addWidget(pageStack, 0, Qt::AlignTop);
     
     // Window pages
-    PackagesPage* packagesPage = new PackagesPage(this);
+    InstallationPage* packagesPage = new InstallationPage(this);
     pageList.append(packagesPage->getPage());
 
     LocalizationPage* localizationPage = new LocalizationPage(this);

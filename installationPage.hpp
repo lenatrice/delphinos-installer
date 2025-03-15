@@ -1,13 +1,13 @@
 #include "mainWindow.hpp"
-#include "loadingAnimation.hpp"
+#include "statusIndicator.hpp"
 #include <QButtonGroup>
 #include <QProcess>
 #include <QProgressBar>
 
-#ifndef PACKAGESPAGE_H
-#define PACKAGESPAGE_H
+#ifndef InstallationPage_H
+#define InstallationPage_H
 
-class PackagesPage : public QWidget
+class InstallationPage : public QWidget
 {
 Q_OBJECT
 private:
@@ -106,8 +106,10 @@ private:
     QPushButton* installBasicAndOptionalButton;
     QPushButton* customInstallationButton;
 
-    QProcess* installationProcess;
-    QProgressBar* installationProgress;
+    QProcess* installationProcess = nullptr;
+    QProgressBar* installationProgressBar;
+    StatusIndicator* installationStatusIndicator;
+    QLabel* installationProgressLabel;
     int currentPackageIndex = 0;
 
 private slots:
@@ -122,9 +124,34 @@ public:
     PageContent* getPage()
     {
         return page;
-    };
+    }
 
-    explicit PackagesPage(QWidget* parent);
+    explicit InstallationPage(QWidget* parent);
+
+    /*~InstallationPage()
+    {
+        if (installationProcess)
+        {   
+            qDebug() << "Installation process exists with state" << installationProcess->state() << ", disconnecting signals";
+            disconnect(installationProcess, nullptr, this, nullptr); 
+            if (installationProcess->state() != QProcess::NotRunning)
+            {
+                qDebug() << "Installation process is running, killing the process";
+                installationProcess->kill();
+                if (!installationProcess->waitForFinished(30000))
+                {
+                    qCritical() << "ERROR: Installation script was not killed, trying terminate.";
+                    installationProcess->terminate();
+                    if (!installationProcess->waitForFinished(30000))
+                    {
+                        qCritical() << "ERROR: Installation script was not terminating.";
+                        installationProcess->terminate();
+                    }
+                }
+            }
+            installationProcess->deleteLater();
+        }
+    }*/
 };
 
 #endif
