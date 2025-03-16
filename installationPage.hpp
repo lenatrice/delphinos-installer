@@ -15,8 +15,8 @@ private:
     QFormLayout* formLayout;
 
     // Packages list
-    QMap<QString, QString> basicPackages = QMap<QString, QString>{
-        { "base", "basic system packages" },
+    QMap<QString, QString> basicPackages = QMap<QString, QString>
+    {
         { "linux", "Linux kernel" },
         { "linux-firmware", "Firmware for hardware devices" },
         { "linux-headers", "Headers for building modules" },
@@ -31,7 +31,8 @@ private:
         { "bluez", "Bluetooth protocol stack" }
     };
 
-    QMap<QString, QString> optionalPackages = QMap<QString, QString>{
+    QMap<QString, QString> optionalPackages = QMap<QString, QString>
+    {
         { "ufw", "firewall configuration tool" },
         { "amd-ucode", "AMD CPU microcode updates" },
         { "intel-ucode", "Intel CPU microcode updates" },
@@ -55,7 +56,8 @@ private:
         { "ntfs-3g", "NTFS filesystem driver" }
     };
 
-    QMap<QString, QString> uncheckedPackages = QMap<QString, QString>{
+    QMap<QString, QString> uncheckedPackages = QMap<QString, QString>
+    {
         { "base-devel", "basic development tools" },
         { "code", "open-source build of Visual Studio Code" },
         { "nvidia", "NVIDIA proprietary GPU driver" },
@@ -72,6 +74,25 @@ private:
         { "discord", "Discord voice, video and text chat" },
         { "telegram-desktop", "Telegram messenger" },
         { "obs-studio", "Screen recording and live streaming software" }
+    };
+
+    // This map will contain all labels to be displayed during the installation procedure, including errors
+    QMap<QString, QString> processLabels = QMap<QString, QString>
+    {   
+        // Installing and configuring packages and files
+        { "fstab", "fstab file"},
+        { "base", "basic system packages"},
+        { "UEFI bootloader", "UEFI bootloader" },
+        { "BIOS bootloader", "BIOS bootloader" },
+
+        // Errors
+        { "/mnt/new_root is not a directory", "/mnt/new_root is not a directory"},
+        { "/mnt/new_root is not a mountpoint for a partition", "/mnt/new_root is not a mountpoint for a partition"},
+        { "Could not install UEFI bootloader", "Could not install UEFI bootloader"},
+        { "Could not generate UEFI bootloader configuration", "generating UEFI bootloader configuration"},
+        { "Could not install BIOS bootloader", "Could not install BIOS bootloader"},
+        { "Could not generate BIOS bootloader configuration", "Could not generate BIOS bootloader configuration"},
+        { "Could not detect the device mounted on /boot", "Could not detect the device mounted on /boot"},
     };
 
     int packageNameRole = Qt::UserRole;
@@ -98,18 +119,21 @@ private:
         return selectedPackages;
     }
 
-    QPushButton* selectAllPackagesButton;
-
+    
     QVBoxLayout* packageSelectionButtonsLayout;
     QPushButton* installAllButton;
     QPushButton* installBasicButton;
     QPushButton* installBasicAndOptionalButton;
     QPushButton* customInstallationButton;
 
+    QPushButton* installSystemButton;
+
     QProcess* installationProcess = nullptr;
     QProgressBar* installationProgressBar;
     StatusIndicator* installationStatusIndicator;
     QLabel* installationProgressLabel;
+    QString installationErrorLabel; 
+
     int currentPackageIndex = 0;
 
 private slots:
@@ -127,31 +151,6 @@ public:
     }
 
     explicit InstallationPage(QWidget* parent);
-
-    /*~InstallationPage()
-    {
-        if (installationProcess)
-        {   
-            qDebug() << "Installation process exists with state" << installationProcess->state() << ", disconnecting signals";
-            disconnect(installationProcess, nullptr, this, nullptr); 
-            if (installationProcess->state() != QProcess::NotRunning)
-            {
-                qDebug() << "Installation process is running, killing the process";
-                installationProcess->kill();
-                if (!installationProcess->waitForFinished(30000))
-                {
-                    qCritical() << "ERROR: Installation script was not killed, trying terminate.";
-                    installationProcess->terminate();
-                    if (!installationProcess->waitForFinished(30000))
-                    {
-                        qCritical() << "ERROR: Installation script was not terminating.";
-                        installationProcess->terminate();
-                    }
-                }
-            }
-            installationProcess->deleteLater();
-        }
-    }*/
 };
 
 #endif

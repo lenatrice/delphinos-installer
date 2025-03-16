@@ -341,7 +341,6 @@ void PartitionPage::onDeviceChanged(int index)
 void PartitionPage::onPartitionItemChanged(const QTableWidgetItem* currentItem, const QTableWidgetItem* previousItem)
 {
     page->setConfirmationMessage("");
-    page->setCanAdvance(false);
     createSystemPartitionsButton->setEnabled(false);
 
     if (!currentItem) return;

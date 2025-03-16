@@ -26,6 +26,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
         item->setFlags(Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
         packageListWidget->addItem(item);
+        processLabels.insert(it.key(), it.value());
     }
 
     for (auto it = optionalPackages.constBegin(); it != optionalPackages.constEnd(); it++)
@@ -37,6 +38,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
         packageListWidget->addItem(item);
+        processLabels.insert(it.key(), it.value());
     }
 
     for (auto it = uncheckedPackages.constBegin(); it != uncheckedPackages.constEnd(); it++)
@@ -48,6 +50,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Unchecked);
         packageListWidget->addItem(item);
+        processLabels.insert(it.key(), it.value());
     }
     
     // Create package selection buttons
@@ -89,7 +92,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     formLayout->addRow(packageSelectionLayout);
 
     // Create the install system button
-    QPushButton* installSystemButton = new QPushButton("Instalar o sistema");
+    installSystemButton = new QPushButton("Instalar o sistema");
     packageSelectionButtonsLayout->addSpacing(300);
     packageSelectionButtonsLayout->addWidget(installSystemButton);
 
@@ -98,7 +101,12 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     connect(installBasicButton, &QPushButton::clicked, this, &InstallationPage::onInstallBasicButtonClicked);
     connect(installBasicAndOptionalButton, &QPushButton::clicked, this, &InstallationPage::onInstallBasicAndOptionalButtonClicked);
 
-    connect(installSystemButton, &QPushButton::clicked, this, &InstallationPage::onInstallSystemButtonClicked);
+    connect(installSystemButton, &QPushButton::clicked, this, [this](bool checked)
+    {
+        installSystemButton->setEnabled(false);
+        InstallationPage::onInstallSystemButtonClicked(checked);
+        installSystemButton->setEnabled(true);
+    });
 
     // Create the progress indicator for the installation 
     QVBoxLayout* installationProgressLayout = new QVBoxLayout;
@@ -129,7 +137,6 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     // Adiciona ao layout principal da página
     page->addLayout(formLayout);
     page->addLayout(installationProgressLayout);
-
 }
 
 
@@ -191,22 +198,16 @@ void InstallationPage::onInstallBasicAndOptionalButtonClicked(bool checked)
 
 void InstallationPage::onInstallSystemButtonClicked(bool checked)
 {
-    // Installation script command: {application_path}/systemInstallScript.sh [package_list]
-
     QStringList installationScriptCommand;
-    installationScriptCommand.append(QApplication::applicationDirPath() + "/systemInstallScript.sh");
+    installationScriptCommand.append(QApplication::applicationDirPath() + "/systemInstallation/systemInstallation.sh");
     installationScriptCommand.append(getSelectedPackages());
-
-    qDebug() << "Running:" << installationScriptCommand;
 
     installationProcess = new QProcess;
     installationProcess->start("pkexec", QStringList() << "/bin/bash" << installationScriptCommand);
 
-    int totalPackages = getSelectedPackages().size();
-
-    connect(installationProcess, &QProcess::started, this, [this, totalPackages](){
+    connect(installationProcess, &QProcess::started, this, [this](){
         installationProgressBar->show();
-        installationProgressBar->setRange(0, totalPackages);
+        installationProgressBar->setRange(0, 0);
         installationProgressBar->setValue(0);
 
         installationStatusIndicator->setStatus(StatusIndicator::Warning);
@@ -214,34 +215,112 @@ void InstallationPage::onInstallSystemButtonClicked(bool checked)
         installationProgressLabel->show();
     });
 
-    connect(installationProcess, &QProcess::readyRead, this, [this]() {
+    connect(installationProcess, &QProcess::readyReadStandardOutput, this, [this]() {
+        page->setCanAdvance(false);
         // If there is output from the process (e.g., progress updates from the script)
-        QByteArray output = installationProcess->readAll();
+        QByteArray output = installationProcess->readAllStandardOutput();
         qDebug() << QString(output).trimmed();
-        
-        // For simplicity, we assume that the output contains the current package being installed
-        // You should adapt this part based on the actual output of your script
-        QString outputStr = QString::fromUtf8(output);
-        if (outputStr.contains("INSTALLING:")) {
-            currentPackageIndex++;
-            installationProgressBar->setValue(currentPackageIndex);
 
+        installationStatusIndicator->setStatus(StatusIndicator::Loading);
+        installationProgressLabel->setText("Iniciando a instalação do sistema");
+        
+        QString outputStr = QString::fromUtf8(output);
+        if (outputStr.contains("PROCEDURECOUNT:")) {
             QStringList parts = outputStr.split(":");
-            QString pkgName = parts[1];
+            QString procedureCountStr = parts[1].trimmed();
+
+            bool procedureCountIsInt;
+            int procedureCount = procedureCountStr.toInt(&procedureCountIsInt);
+            if (procedureCountIsInt) {
+                installationProgressBar->setRange(0, procedureCount);
+            } else {
+                qWarning() << "Failed to convert PROCEDURECOUNT to an integer";
+            }
+            installationProgressBar->setRange(0, procedureCount);
+        }
+        if (outputStr.contains("PROGRESS:"))
+        {
+            QStringList parts = outputStr.split(":");
+            QString progressStr = parts[1].trimmed();
+
+            bool currentProgressIsInt;
+            int progress = progressStr.toInt(&currentProgressIsInt);
+            if (currentProgressIsInt) {
+                installationProgressBar->setValue(progress);
+            } else {
+                qWarning() << "Failed to convert PROGRESS to an integer";
+            }
+        }
+        if (outputStr.contains("PREPARE NEW ROOT:"))
+        {
+            installationProgressLabel->setText("Preparando novo sistema de arquivos");
+        }
+        if (outputStr.contains("INSTALLING:")) {
+            QStringList parts = outputStr.split(":");
+            QString packageName = parts[1];
 
             QString readableName;
-            if (basicPackages.contains(pkgName)) {
-                readableName = basicPackages[pkgName];
-            } else if (optionalPackages.contains(pkgName)) {
-                readableName = optionalPackages[pkgName];
-            } else if (uncheckedPackages.contains(pkgName)) {
-                readableName = uncheckedPackages[pkgName];
+            if (processLabels.contains(packageName)) {
+                readableName = processLabels[packageName];
             } else {
-                readableName = pkgName;  // Default to the package name if not found in any map
+                readableName = packageName;  // Default to the package name if not found in any map
             }
 
-            installationStatusIndicator->setStatus(StatusIndicator::Loading);
             installationProgressLabel->setText("Instalando " + readableName);
+        }
+        if (outputStr.contains("CONFIGURING:")) {
+            QStringList parts = outputStr.split(":");
+            QString name = parts[1];
+
+            QString readableName;
+
+            if (processLabels.contains(name))
+            {
+                readableName = processLabels[name];
+            } else {
+                readableName = name;
+            }
+
+            installationProgressBar->setValue(currentPackageIndex);
+
+            installationStatusIndicator->setStatus(StatusIndicator::Loading);
+            installationProgressLabel->setText("Configurando " + readableName);
+        }
+        if (outputStr.contains("ACTIVATING:")) {
+            QStringList parts = outputStr.split(":");
+            QString name = parts[1];
+
+            QString readableName;
+
+            if (processLabels.contains(name))
+            {
+                readableName = processLabels[name];
+            } else {
+                readableName = name;
+            }
+
+            installationProgressBar->setValue(currentPackageIndex);
+
+            installationStatusIndicator->setStatus(StatusIndicator::Loading);
+            installationProgressLabel->setText("Ativando serviço do sistema " + readableName);
+        }
+        if (outputStr.contains("ERROR:"))
+        {
+            QStringList parts = outputStr.split(":");
+            QString name = parts[1];
+
+            QString readableName;
+
+            if (processLabels.contains(name))
+            {
+                readableName = processLabels[name];
+            } else {
+                readableName = name;
+            }
+
+            installationProgressBar->setValue(currentPackageIndex);
+            installationErrorLabel = QString("Erro: " + readableName);
+            return;
         }
     });
 
@@ -251,11 +330,17 @@ void InstallationPage::onInstallSystemButtonClicked(bool checked)
         if (exitStatus == QProcess::CrashExit || exitCode != 0) {
             qDebug() << "System installation process failed";
             installationStatusIndicator->setStatus(StatusIndicator::Error);
-            installationProgressLabel->setText("Instalação do sistema falhou");
+            if (!installationErrorLabel.isEmpty())
+            {
+                installationProgressLabel->setText(installationErrorLabel);
+            } else {
+                installationProgressLabel->setText("Instalação do sistema falhou");
+            }
         } else {
             qDebug() << "System installation finished successfully";
             installationStatusIndicator->setStatus(StatusIndicator::Ok);
             installationProgressLabel->setText("Instalação do sistema finalizada com sucesso");
+            page->setCanAdvance(true);
         }
     });
 }

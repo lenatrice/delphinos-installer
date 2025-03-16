@@ -42,10 +42,16 @@ set(HEADERS
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 set(TARGET_DIR ${CMAKE_BINARY_DIR})
 
-file(COPY ${SOURCE_DIR}/systemInstallScript.sh DESTINATION ${TARGET_DIR})
-file(COPY ${SOURCE_DIR}/statusIndicator DESTINATION ${TARGET_DIR})
 
 add_executable(delphinos-installer ${SOURCES} ${HEADERS})
+
+add_custom_target(copy_system_files
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/systemInstallation ${TARGET_DIR}/systemInstallation
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/statusIndicator ${TARGET_DIR}/statusIndicator
+    COMMENT "Copying system installation scripts and status indicator"
+)
+
+add_dependencies(delphinos-installer copy_system_files)
 
 # Include directories
 target_include_directories(delphinos-installer PRIVATE
