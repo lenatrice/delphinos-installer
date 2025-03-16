@@ -21,7 +21,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     {
         QString packageDescription = it.value();
         packageDescription[0] = packageDescription[0].toUpper();
-        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        QListWidgetItem* item = new QListWidgetItem(packageDescription);
         item->setData(packageNameRole, it.key());
         item->setFlags(Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
@@ -33,7 +33,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     {
         QString packageDescription = it.value();
         packageDescription[0] = packageDescription[0].toUpper();
-        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        QListWidgetItem* item = new QListWidgetItem(packageDescription);
         item->setData(packageNameRole, it.key());
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Checked);
@@ -45,7 +45,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     {
         QString packageDescription = it.value();
         packageDescription[0] = packageDescription[0].toUpper();
-        QListWidgetItem* item = new QListWidgetItem(it.key() + " - " + packageDescription);
+        QListWidgetItem* item = new QListWidgetItem(packageDescription);
         item->setData(packageNameRole, it.key());
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(Qt::Unchecked);
@@ -219,108 +219,105 @@ void InstallationPage::onInstallSystemButtonClicked(bool checked)
         page->setCanAdvance(false);
         // If there is output from the process (e.g., progress updates from the script)
         QByteArray output = installationProcess->readAllStandardOutput();
-        qDebug() << QString(output).trimmed();
-
+        
         installationStatusIndicator->setStatus(StatusIndicator::Loading);
-        installationProgressLabel->setText("Iniciando a instalação do sistema");
         
         QString outputStr = QString::fromUtf8(output);
-        if (outputStr.contains("PROCEDURECOUNT:")) {
-            QStringList parts = outputStr.split(":");
-            QString procedureCountStr = parts[1].trimmed();
-
-            bool procedureCountIsInt;
-            int procedureCount = procedureCountStr.toInt(&procedureCountIsInt);
-            if (procedureCountIsInt) {
-                installationProgressBar->setRange(0, procedureCount);
-            } else {
-                qWarning() << "Failed to convert PROCEDURECOUNT to an integer";
-            }
-            installationProgressBar->setRange(0, procedureCount);
-        }
-        if (outputStr.contains("PROGRESS:"))
+        QStringList outputLines = outputStr.split("\n");
+        outputLines.removeAll("");
+        for (const QString& line : outputLines)
         {
-            QStringList parts = outputStr.split(":");
-            QString progressStr = parts[1].trimmed();
-
-            bool currentProgressIsInt;
-            int progress = progressStr.toInt(&currentProgressIsInt);
-            if (currentProgressIsInt) {
-                installationProgressBar->setValue(progress);
-            } else {
-                qWarning() << "Failed to convert PROGRESS to an integer";
+            qDebug() << QString(line);
+            if (line.contains("PROCEDURECOUNT:")) {
+                QStringList parts = line.split(":");
+                QString procedureCountStr = parts[1];
+    
+                bool procedureCountIsInt;
+                int procedureCount = procedureCountStr.toInt(&procedureCountIsInt);
+                if (procedureCountIsInt) {
+                    installationProgressBar->setRange(0, procedureCount);
+                } else {
+                    qWarning() << "Failed to convert PROCEDURECOUNT to an integer";
+                }
             }
-        }
-        if (outputStr.contains("PREPARE NEW ROOT:"))
-        {
-            installationProgressLabel->setText("Preparando novo sistema de arquivos");
-        }
-        if (outputStr.contains("INSTALLING:")) {
-            QStringList parts = outputStr.split(":");
-            QString packageName = parts[1];
-
-            QString readableName;
-            if (processLabels.contains(packageName)) {
-                readableName = processLabels[packageName];
-            } else {
-                readableName = packageName;  // Default to the package name if not found in any map
+            else if (line.contains("PROGRESS:")) {
+                QStringList parts = line.split(":");
+                QString progressStr = parts[1];
+    
+                bool currentProgressIsInt;
+                int progress = progressStr.toInt(&currentProgressIsInt);
+                if (currentProgressIsInt) {
+                    installationProgressBar->setValue(progress);
+                } else {
+                    qWarning() << "Failed to convert PROGRESS to an integer";
+                }
             }
-
-            installationProgressLabel->setText("Instalando " + readableName);
-        }
-        if (outputStr.contains("CONFIGURING:")) {
-            QStringList parts = outputStr.split(":");
-            QString name = parts[1];
-
-            QString readableName;
-
-            if (processLabels.contains(name))
-            {
-                readableName = processLabels[name];
-            } else {
-                readableName = name;
+            else if (line.contains("PREPARE NEW ROOT:")) {
+                installationProgressLabel->setText("Preparando novo sistema de arquivos");
             }
-
-            installationProgressBar->setValue(currentPackageIndex);
-
-            installationStatusIndicator->setStatus(StatusIndicator::Loading);
-            installationProgressLabel->setText("Configurando " + readableName);
-        }
-        if (outputStr.contains("ACTIVATING:")) {
-            QStringList parts = outputStr.split(":");
-            QString name = parts[1];
-
-            QString readableName;
-
-            if (processLabels.contains(name))
-            {
-                readableName = processLabels[name];
-            } else {
-                readableName = name;
+            else if (line.contains("INSTALLING:")) {
+                QStringList parts = line.split(":");
+                QString packageName = parts[1];
+    
+                QString readableName;
+                if (processLabels.contains(packageName)) {
+                    readableName = processLabels[packageName];
+                } else {
+                    readableName = packageName;  // Default to the package name if not found in any map
+                }
+    
+                installationProgressLabel->setText("Instalando " + readableName);
             }
-
-            installationProgressBar->setValue(currentPackageIndex);
-
-            installationStatusIndicator->setStatus(StatusIndicator::Loading);
-            installationProgressLabel->setText("Ativando serviço do sistema " + readableName);
-        }
-        if (outputStr.contains("ERROR:"))
-        {
-            QStringList parts = outputStr.split(":");
-            QString name = parts[1];
-
-            QString readableName;
-
-            if (processLabels.contains(name))
-            {
-                readableName = processLabels[name];
-            } else {
-                readableName = name;
+            else if (line.contains("CONFIGURING:")) {
+                QStringList parts = line.split(":");
+                QString name = parts[1];
+    
+                QString readableName;
+    
+                if (processLabels.contains(name)) {
+                    readableName = processLabels[name];
+                } else {
+                    readableName = name;
+                }
+    
+                installationProgressBar->setValue(currentPackageIndex);
+    
+                installationStatusIndicator->setStatus(StatusIndicator::Loading);
+                installationProgressLabel->setText("Configurando " + readableName);
             }
-
-            installationProgressBar->setValue(currentPackageIndex);
-            installationErrorLabel = QString("Erro: " + readableName);
-            return;
+            else if (line.contains("ACTIVATING:")) {
+                QStringList parts = line.split(":");
+                QString name = parts[1];
+    
+                QString readableName;
+    
+                if (processLabels.contains(name)) {
+                    readableName = processLabels[name];
+                } else {
+                    readableName = name;
+                }
+    
+                installationProgressBar->setValue(currentPackageIndex);
+    
+                installationStatusIndicator->setStatus(StatusIndicator::Loading);
+                installationProgressLabel->setText("Ativando serviço do sistema " + readableName);
+            }
+            else if (line.contains("ERROR:")) {
+                QStringList parts = line.split(":");
+                QString name = parts[1];
+    
+                QString readableName;
+    
+                if (processLabels.contains(name)) {
+                    readableName = processLabels[name];
+                } else {
+                    readableName = name;
+                }
+    
+                installationProgressBar->setValue(currentPackageIndex);
+                installationErrorLabel = QString("Erro: " + readableName);
+                return;
+            }
         }
     });
 

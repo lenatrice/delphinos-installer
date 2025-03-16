@@ -18,17 +18,17 @@ private:
     QMap<QString, QString> basicPackages = QMap<QString, QString>
     {
         { "linux", "Linux kernel" },
-        { "linux-firmware", "Firmware for hardware devices" },
-        { "linux-headers", "Headers for building modules" },
-        { "grub", "bootloader" },
+        { "linux-firmware", "Linux firmware for hardware devices" },
+        { "linux-headers", "Linux headers for building modules" },
         { "efibootmgr", "EFI boot manager" },
         { "networkmanager", "network management service" },
         { "iwd", "Wi-Fi daemon" },
         { "plasma", "Plasma desktop environment" },
-        { "sddm", "Login and display manager" },
-        { "sudo", "privilege elevation support" },
+        { "sddm", "login and display manager" },
+        { "sudo", "Sudo privilege elevation support" },
         { "mesa", "open-source graphics driver" },
-        { "bluez", "Bluetooth protocol stack" }
+        { "bluez", "Bluetooth protocol stack" },
+        { "man", "manuals for system programs"}
     };
 
     QMap<QString, QString> optionalPackages = QMap<QString, QString>
@@ -39,48 +39,48 @@ private:
         { "os-prober", "operational system prober" },
         { "zsh", "Z shell" },
         { "grml-zsh-config", "preconfigured Zsh setup from GRML" },
-        { "htop", "command-line process viewer" },
-        { "vim", "command-line text editor" },
-        { "nano", "command-line text editor" },
+        { "htop", "htop (command-line process viewer)" },
+        { "vim", "Vim (command-line text editor)" },
+        { "nano", "Nano (command-line text editor)" },
         { "konsole", "console interface" },
-        { "firefox", "web browser" },
-        { "dolphin", "file explorer" },
-        { "kate", "advanced text editor" },
-        { "vlc", "media player supporting most formats" },
-        { "qbittorrent", "torrent client" },
-        { "spectacle", "screenshot tool" },
-        { "wine", "Windows compatibility layer" },
+        { "firefox", "Firefox (web browser)" },
+        { "dolphin", "Dolphin (file explorer)" },
+        { "kate", "Kate (text editor)" },
+        { "vlc", "VLC (media player)" },
+        { "qbittorrent", "qBitTorrent (torrent client)" },
+        { "wine", "Wine (Windows compatibility layer)" },
         { "wine-mono", "Wine's implementation of Microsoft's .NET Framework" },
         { "flatpak", "Flatpak package manager" },
-        { "neofetch", "commandline system info tool" },
+        { "neofetch", "NeoFetch (commandline system info tool)" },
         { "ntfs-3g", "NTFS filesystem driver" }
     };
 
     QMap<QString, QString> uncheckedPackages = QMap<QString, QString>
     {
         { "base-devel", "basic development tools" },
-        { "code", "open-source build of Visual Studio Code" },
-        { "nvidia", "NVIDIA proprietary GPU driver" },
+        { "code", "Code (open-source build of Visual Studio Code)" },
+        { "nvidia", "NVIDIA's proprietary GPU driver" },
         { "amdvlk", "AMD Vulkan driver" },
         { "vkd3d", "Direct3D 12 to Vulkan translation library" },
         { "mangohud", "Vulkan overlay for monitoring FPS and hardware stats" },
-        { "krita", "digital painting and illustration software" },
-        { "thunderbird", "Email client from Mozilla" },
-        { "timeshift", "system restore utility" },
-        { "kdenlive", "video editor" },
+        { "krita", "Krita (digital painting and illustration software)" },
+        { "thunderbird", "Thunderbird (Email client from Mozilla)" },
+        { "timeshift", "Timeshift (system restore utility)" },
+        { "kdenlive", "Kdenlive (video editor)" },
         { "virt-manager", "graphical manager for virtual machines (KVM/QEMU)" },
-        { "retroarch", "multi-system emulator frontend" },
+        { "retroarch", "RetroArch (multi-system emulator frontend)" },
         { "steam", "Steam (Valve's game distribution platform)" },
-        { "discord", "Discord voice, video and text chat" },
+        { "discord", "Discord (voice, video and text chat application)" },
         { "telegram-desktop", "Telegram messenger" },
-        { "obs-studio", "Screen recording and live streaming software" }
+        { "obs-studio", "OBS Studio (Screen recording and live streaming software)" }
     };
 
     // This map will contain all labels to be displayed during the installation procedure, including errors
     QMap<QString, QString> processLabels = QMap<QString, QString>
     {   
         // Installing and configuring packages and files
-        { "fstab", "fstab file"},
+        { "grub", "bootloader" },
+        { "fstab", "fstab file" },
         { "base", "basic system packages"},
         { "UEFI bootloader", "UEFI bootloader" },
         { "BIOS bootloader", "BIOS bootloader" },
@@ -93,6 +93,7 @@ private:
         { "Could not install BIOS bootloader", "Could not install BIOS bootloader"},
         { "Could not generate BIOS bootloader configuration", "Could not generate BIOS bootloader configuration"},
         { "Could not detect the device mounted on /boot", "Could not detect the device mounted on /boot"},
+        { "Could not generate fstab file", "Could not generate fstab file"}
     };
 
     int packageNameRole = Qt::UserRole;

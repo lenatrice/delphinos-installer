@@ -20,6 +20,7 @@
 #include <QListWidgetItem>
 #include <QTranslator>
 #include "networkDBus.hpp"
+#include <QString>
 
 class PageContent;
 
@@ -73,10 +74,11 @@ signals:
 
 struct PageTitle : public QLabel
 {
+    const QString color = "color: rgb(30, 100, 255);";
     explicit PageTitle(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet("font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
+        setStyleSheet("font-weight: bold; " + color + " font-size: 24px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         setMaximumHeight(sizeHint().height());
     }
@@ -84,7 +86,7 @@ struct PageTitle : public QLabel
     explicit PageTitle(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet("font-weight: bold; color:rgb(58, 124, 230); font-size: 24px");
+        setStyleSheet("font-weight: bold; " + color + " font-size: 24px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         setMaximumHeight(sizeHint().height());
@@ -93,16 +95,17 @@ struct PageTitle : public QLabel
 
 struct PageDescription : public QLabel
 {
+    const QString color = "color:rgb(60, 138, 255);";
     explicit PageDescription(QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet("font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setStyleSheet("font-weight: regular; " + color + " font-size: 12px");
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
     explicit PageDescription(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-        setStyleSheet("font-weight: regular; color:rgb(91, 126, 180); font-size: 12px");
+        setStyleSheet("font-weight: regular; " + color + " font-size: 12px");
         setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
@@ -172,6 +175,11 @@ public:
         layout->addWidget(widget, 0, Qt::AlignLeft);
     }
 
+    void addWidget(QWidget* widget, int stretch, Qt::Alignment alignment)
+    {
+        layout->addWidget(widget, stretch, alignment);
+    }
+
     void addLayout(QLayout* newLayout)
     {
         layout->addLayout(newLayout);
@@ -181,6 +189,16 @@ public:
     {
         return pageSize;
     }
+
+    const PageTitle& getTitle()
+    {
+        return *title;
+    };
+
+    const PageDescription& getDescription()
+    {
+        return *description;
+    };
 
     // Functions for controlling and checking whether page can be advanced
 

@@ -6,7 +6,7 @@ source $script_dir/common;
 
 echo "Script dir: $script_dir"
 
-trap 'echo "Script interrupted. Cleaning up..."; chroot_teardown; exit 1' SIGINT SIGTERM ERR
+trap 'echo "Script interrupted. Cleaning up..."; chroot_teardown; exit 1' SIGINT SIGTERM EXIT ERR 
 
 packages=("$@")
 
@@ -17,49 +17,47 @@ fi
 
 newroot="/mnt/new_root"
 
-procedureList=(
+installationProcedureList=(
   "PREPARE NEW ROOT:",
   "INSTALLING:base:",
   "INSTALLING:grub:"
 )
 
 for pkg in "${packages[@]}"; do
-    procedureList+=("INSTALLING:$pkg:")
+    installationProcedureList+=("INSTALLING:$pkg:")
 done
 
 if [ -d /sys/firmware/efi ]; then
-  procedureList+=("INSTALLING:UEFI bootloader:", "CONFIGURING:UEFI bootloader:")
+  installationProcedureList+=("INSTALLING:UEFI bootloader:", "CONFIGURING:UEFI bootloader:")
 else
-  procedureList+=("INSTALLING:BIOS bootloader:", "CONFIGURING:BIOS bootloader:")
+  installationProcedureList+=("INSTALLING:BIOS bootloader:", "CONFIGURING:BIOS bootloader:")
 fi
 
-procedureList+=(
+installationProcedureList+=(
   "ACTIVATING:NetworkManager:",
   "ACTIVATING:iwd:",
   "ACTIVATING:sddm:",
   "GENERATING:fstab:"
 )
 
-procedureCount=${#procedureList[@]}
+procedureCount=${#installationProcedureList[@]}
 echo "PROCEDURECOUNT:$procedureCount:"
 
-progress=0
-
-export DELPHINOS_INSTALLATION_PROCEDURE_LIST="${procedureList[@]}"
-export DELPHINOS_INSTALLATION_PROGRESS="$progress"
-
-setCurrentProgress() {
-  for i in "${!procedureList[@]}"; do
-      if [[ "${procedureList[i]}" == "$1" ]]; then
-          progress=$i
-          DELPHINOS_INSTALLATION_PROGRESS=$i
-          echo "PROGRESS:$progress:"
+setInstallationProgress() {
+  echo "$1"
+  for i in "${!installationProcedureList[@]}"; do
+      procedure="${installationProcedureList[i]}"
+      procedure=$(echo "$procedure" | sed 's/,$//')  # Remove trailing comma
+      if [[ "$procedure" == "$1" ]]; then
+          installationProgress=$i
+          echo "PROGRESS:$installationProgress:"
           return;
       fi
   done
+  echo "Warning: '$1' not found in the procedure list"
 }
 
-export -f setCurrentProgress
+export -f setInstallationProgress
 
 if [ ! -d "$newroot" ]; then
     echo "ERROR:$newroot is not a directory:"
@@ -71,9 +69,7 @@ if ! findmnt $newroot > /dev/null; then
     exit 2;
 fi
 
-setCurrentProgress "PREPARE NEW ROOT:"
-
-rm -r $newroot/*
+setInstallationProgress "PREPARE NEW ROOT:"
 
 # Ensure required directories exist
 echo "Creating directories in $newroot..."
@@ -102,23 +98,29 @@ packages_str="${packages[*]}"
 
 export DBPATH=/var/lib/pacman/
 
-
-setCurrentProgress "INSTALLING:base:"
+sudo rm -f "/mnt/new_root/var/lib/pacman/db.lck"
+setInstallationProgress "INSTALLING:base:"
 pacman --noconfirm --root $newroot -Sy base
 
-setCurrentProgress "INSTALLING:grub:"
+setInstallationProgress "INSTALLING:grub:"
 pacman --noconfirm --root $newroot -Sy grub
 
 echo "Chrooting on $newroot and running /systemInstallation/installPackages.sh $packages_str"
 
-chroot $newroot /systemInstallation/installPackages.sh $packages_str
+installationProcedureListStr=$(IFS=,; echo "${installationProcedureList[*]}")
+
+chroot $newroot env \
+  installationProcedureList="$installationProcedureListStr" \
+  installationProgress="$installationProgress" \
+  /systemInstallation/installPackages.sh $packages_str
+
 chroot_teardown
 
 cp -v -r $newroot/systemInstallation/systemFiles/* $newroot
 
 rm -r $newroot/systemInstallation
 
-setCurrentProgress "GENERATING:fstab:"
+setInstallationProgress "GENERATING:fstab:"
 
 genfstab $newroot > $newroot/etc/fstab
 

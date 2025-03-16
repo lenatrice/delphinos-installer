@@ -27,6 +27,7 @@ set(SOURCES
     networkPage.cpp
     partitionPage.cpp
     installationPage.cpp
+    usersPage.cpp
 )
 
 set(HEADERS
@@ -37,6 +38,7 @@ set(HEADERS
     networkPage.hpp
     partitionPage.hpp
     installationPage.hpp
+    usersPage.hpp
 )
 
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR})

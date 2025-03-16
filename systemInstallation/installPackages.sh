@@ -1,18 +1,19 @@
 #!/bin/bash
 source /systemInstallation/common
 
+echo "Running installation of packages"
+
 packages=("$@")
 total=${#packages[@]}
 counter=0
-
-echo "Running installation of packages"
+IFS=, read -r -a installationProcedureList <<< "$installationProcedureList"
 
 # Synchronize the package databases
 pacman --noconfirm -Sy
 
 for pkg in "${packages[@]}"; do
     counter=$((counter + 1))
-    setCurrentProgress "INSTALLING:$pkg:"
+    setInstallationProgress "INSTALLING:$pkg:"
     pacman --noconfirm -S "$pkg"
 done
 
@@ -20,13 +21,13 @@ echo "Installation finished successfully"
 
 # Detect if system is UEFI or BIOS and install the bootloader accordingly
 if [ -d /sys/firmware/efi ]; then
-    setCurrentProgress "INSTALLING:UEFI bootloader:"
-    grub-install --target=x86_64-efi --efi=/boot && echo "Successfully installed UEFI bootloader"
+    setInstallationProgress "INSTALLING:UEFI bootloader:"
+    grub-install --target=x86_64-efi --efi-directory=/boot 
     if [ $? -ne 0 ]; then
         echo "ERROR:could not install UEFI bootloader"
         exit 2
     fi
-    setCurrentProgress "CONFIGURING:UEFI bootloader:"
+    setInstallationProgress "CONFIGURING:UEFI bootloader:"
     grub-mkconfig -o /boot/grub/grub.cfg
     if [ $? -ne 0 ]; then
         echo "ERROR:Could not generate UEFI bootloader configuration:"
@@ -42,13 +43,13 @@ else
     fi
 
     # Install BIOS bootloader on the detected device
-    setCurrentProgress "INSTALLING:BIOS bootloader:"
+    setInstallationProgress "INSTALLING:BIOS bootloader:"
     grub-install --target=i386-pc "$boot_device" && echo "Successfully installed BIOS bootloader"
     if [ $? -ne 0 ]; then
         echo "ERROR:Could not generate BIOS bootloader configuration:"
         exit 2
     fi
-    setCurrentProgress "CONFIGURING:BIOS bootloader:"
+    setInstallationProgress "CONFIGURING:BIOS bootloader:"
     grub-mkconfig -o /boot/grub/grub.cfg
         if [ $? -ne 0 ]; then
         echo "ERROR:generating BIOS bootloader configuration:"
@@ -58,11 +59,11 @@ fi
 
 chpasswd <<< "root:root"
 
-setCurrentProgress "ACTIVATING:NetworkManager:"
+setInstallationProgress "ACTIVATING:NetworkManager:"
 systemctl enable NetworkManager
-setCurrentProgress "ACTIVATING:iwd:"
+setInstallationProgress "ACTIVATING:iwd:"
 systemctl enable iwd
-setCurrentProgress "ACTIVATING:sddm:"
+setInstallationProgress "ACTIVATING:sddm:"
 systemctl enable sddm
 
 
