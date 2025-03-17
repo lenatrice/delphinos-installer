@@ -93,7 +93,7 @@ private:
         { "Could not install BIOS bootloader", "Could not install BIOS bootloader"},
         { "Could not generate BIOS bootloader configuration", "Could not generate BIOS bootloader configuration"},
         { "Could not detect the device mounted on /boot", "Could not detect the device mounted on /boot"},
-        { "Could not generate fstab file", "Could not generate fstab file"}
+        { "Could not generate fstab file", "Could not generate fstab fileenv"}
     };
 
     int packageNameRole = Qt::UserRole;

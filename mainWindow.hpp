@@ -21,6 +21,7 @@
 #include <QTranslator>
 #include "networkDBus.hpp"
 #include <QString>
+#include <QFile>
 
 class PageContent;
 
@@ -36,6 +37,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void setCustomPalette();
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -171,7 +173,7 @@ public:
     }
 
     void addWidget(QWidget* widget)
-    {
+    {   
         layout->addWidget(widget, 0, Qt::AlignLeft);
     }
 
@@ -180,9 +182,19 @@ public:
         layout->addWidget(widget, stretch, alignment);
     }
 
+    void removeWidget(QWidget* widget)
+    {
+        layout->removeWidget(widget);
+    }
+
     void addLayout(QLayout* newLayout)
     {
         layout->addLayout(newLayout);
+    }
+
+    void removeLayout(QLayout* _layout)
+    {
+        layout->removeItem(_layout);
     }
 
     QSize getSize()
@@ -256,7 +268,6 @@ public:
     {
         return warningMessage;
     }
-
 
 signals:
     void canAdvanceChanged(bool _canAdvance);

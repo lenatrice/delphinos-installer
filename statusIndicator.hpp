@@ -22,9 +22,10 @@ public:
 
     explicit StatusIndicator(QWidget *parent = nullptr)
         : QWidget(parent), frameIndex(0), currentStatus(None) {
-        setFixedSize(24, 24);
+        setFixedSize(16, 16);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         setVisible(false);
+        setStyleSheet("background: transparent;");
 
         loadingTimer = new QTimer(this);
         connect(loadingTimer, &QTimer::timeout, this, &StatusIndicator::nextFrame);
@@ -93,6 +94,7 @@ private slots:
     }
 
 private:
+    QHBoxLayout *layout = new QHBoxLayout(this);
     void updateVisibility() {
         setVisible(currentStatus != None);
     }

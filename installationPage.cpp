@@ -1,7 +1,31 @@
 #include "installationPage.hpp"
 #include <QRegularExpression>
-#include <QDir>
+#include <QCryptographicHash>
+#include <QFile>
 #include <QApplication>
+#include <QMessageBox>
+
+// Function to calculate the checksum of a file
+QString calculateFileChecksum(const QString &filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Could not open file for reading:" << filePath;
+        return QString();
+    }
+
+    // Use SHA256 as an example hash function
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+
+    // Read the file in chunks to avoid memory overload with large files
+    while (!file.atEnd()) {
+        QByteArray chunk = file.read(1024); // Read in chunks of 1024 bytes
+        hash.addData(chunk);
+    }
+
+    file.close();
+
+    return hash.result().toHex();  // Returns the checksum as a hexadecimal string
+}
 
 InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
 {
@@ -9,6 +33,29 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
         "Seleção de pacotes", "Escolha os pacotes que deseja instalar no sistema, e clique em \"Instalar\" para prosseguir", 760, 640, this
     );
     page->setCanAdvance(false);
+
+    // Verify the scripts checksum for security
+    QString systemInstallationScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/systemInstallation.sh");
+    QString installPackagesScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/installPackages.sh");
+    QString commonScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/common");
+
+    if (systemInstallationScriptChecksum != SYSTEM_INSTALLATION_CHECKSUM)
+    {
+        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"systemInstallation.sh\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
+        return;
+    }
+
+    if (installPackagesScriptChecksum != INSTALL_PACKAGES_CHECKSUM)
+    {
+        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"installPackages.sh\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
+        return;
+    }
+
+    if (commonScriptChecksum != COMMON_CHECKSUM)
+    {
+        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"common\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
+        return;
+    }
 
     formLayout = new QFormLayout;
     QHBoxLayout* packageSelectionLayout = new QHBoxLayout;
@@ -196,8 +243,21 @@ void InstallationPage::onInstallBasicAndOptionalButtonClicked(bool checked)
     connect(packageListWidget, &QListWidget::itemChanged, this, &InstallationPage::onPackageListChanged);
 }
 
+
+
+/*const QString SYSTEM_INSTALLATION_CHECKSUM = QString::fromUtf8(SYSTEM_INSTALLATION_CHECKSUM);
+const QString INSTALL_PACKAGES_CHECKSUM = QString::fromUtf8(INSTALL_PACKAGES_CHECKSUM);
+const QString COMMON_CHECKSUM = QString::fromUtf8(COMMON_CHECKSUM);*/
+
 void InstallationPage::onInstallSystemButtonClicked(bool checked)
 {
+    #ifdef SYSTEM_INSTALLATION_CHECKSUM
+        qDebug() << "SYSTEM_INSTALLATION_CHECKSUM defined!";
+    #else
+        qDebug() << "SYSTEM_INSTALLATION_CHECKSUM not defined!";
+        exit;
+    #endif
+
     QStringList installationScriptCommand;
     installationScriptCommand.append(QApplication::applicationDirPath() + "/systemInstallation/systemInstallation.sh");
     installationScriptCommand.append(getSelectedPackages());

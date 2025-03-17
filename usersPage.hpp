@@ -1,5 +1,6 @@
 #include "mainWindow.hpp"
 #include "statusIndicator.hpp"
+#include <QFile>
 
 class UsersPage : public QWidget
 {
@@ -37,6 +38,20 @@ private:
 
     QPushButton* confirmButton;
 
+    bool isGroupNameUsed(const QString &username) {
+        QFile file("/mnt/new_root/etc/group");
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return false;
+    
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            if (line.startsWith(username + ":")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 private slots:
     void onConfirmButtonClicked(bool checked);

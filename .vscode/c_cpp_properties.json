@@ -14,7 +14,7 @@
                 "/usr/include/kpmcore",
                 "/usr/include"
             ],
-            "defines": [],
+            "defines": [ "SYSTEM_INSTALLATION_CHECKSUM=\"\"", "INSTALL_PACKAGES_CHECKSUM=\"\"", "COMMON_CHECKSUM=\"\"" ],
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
