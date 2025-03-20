@@ -62,22 +62,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     pageStack = new QStackedWidget(centralWidget);
 
     mainLayout->addWidget(pageStack, 0, Qt::AlignTop);
-
+    
     InstallationPage* installationPage = new InstallationPage(this);
     pageList.append(installationPage->getPage());
-
-    UsersPage* usersPage = new UsersPage(this);
-    pageList.append(usersPage->getPage());
-
+    
     LocalizationPage* localizationPage = new LocalizationPage(this);
     pageList.append(localizationPage->getPage());
     
     NetworkPage* networkPage = new NetworkPage(this);
     pageList.append(networkPage->getPage());
-    
+
     PartitionPage* partitionPage = new PartitionPage(this);
     pageList.append(partitionPage->getPage());
-
+    
+    UsersPage* usersPage = new UsersPage(this);
+    pageList.append(usersPage->getPage());
 
     PageContent* emptyPage = new PageContent("Página vazia", "Para fins de teste", 640, 480, this);// empty last page. For testing purposes.
     pageList.append(emptyPage);

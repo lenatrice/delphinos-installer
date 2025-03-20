@@ -175,6 +175,45 @@ delphinos-installer/fast:
 .PHONY : delphinos-installer/fast
 
 #=============================================================================
+# Target rules for targets named delphinos-installer-elevated
+
+# Build rule for target.
+delphinos-installer-elevated: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 delphinos-installer-elevated
+.PHONY : delphinos-installer-elevated
+
+# fast build rule for target.
+delphinos-installer-elevated/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/build
+.PHONY : delphinos-installer-elevated/fast
+
+#=============================================================================
+# Target rules for targets named copy_system_files
+
+# Build rule for target.
+copy_system_files: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 copy_system_files
+.PHONY : copy_system_files
+
+# fast build rule for target.
+copy_system_files/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copy_system_files.dir/build.make CMakeFiles/copy_system_files.dir/build
+.PHONY : copy_system_files/fast
+
+#=============================================================================
+# Target rules for targets named copy_stylesheet
+
+# Build rule for target.
+copy_stylesheet: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 copy_stylesheet
+.PHONY : copy_stylesheet
+
+# fast build rule for target.
+copy_stylesheet/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copy_stylesheet.dir/build.make CMakeFiles/copy_stylesheet.dir/build
+.PHONY : copy_stylesheet/fast
+
+#=============================================================================
 # Target rules for targets named delphinos-installer_autogen_timestamp_deps
 
 # Build rule for target.
@@ -200,6 +239,56 @@ delphinos-installer_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer_autogen.dir/build.make CMakeFiles/delphinos-installer_autogen.dir/build
 .PHONY : delphinos-installer_autogen/fast
 
+#=============================================================================
+# Target rules for targets named delphinos-installer-elevated_autogen_timestamp_deps
+
+# Build rule for target.
+delphinos-installer-elevated_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 delphinos-installer-elevated_autogen_timestamp_deps
+.PHONY : delphinos-installer-elevated_autogen_timestamp_deps
+
+# fast build rule for target.
+delphinos-installer-elevated_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated_autogen_timestamp_deps.dir/build.make CMakeFiles/delphinos-installer-elevated_autogen_timestamp_deps.dir/build
+.PHONY : delphinos-installer-elevated_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named delphinos-installer-elevated_autogen
+
+# Build rule for target.
+delphinos-installer-elevated_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 delphinos-installer-elevated_autogen
+.PHONY : delphinos-installer-elevated_autogen
+
+# fast build rule for target.
+delphinos-installer-elevated_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated_autogen.dir/build.make CMakeFiles/delphinos-installer-elevated_autogen.dir/build
+.PHONY : delphinos-installer-elevated_autogen/fast
+
+delphinos-installer-elevated_autogen/mocs_compilation.o: delphinos-installer-elevated_autogen/mocs_compilation.cpp.o
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.o
+
+# target to build an object file
+delphinos-installer-elevated_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinos-installer-elevated_autogen/mocs_compilation.cpp.o
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.cpp.o
+
+delphinos-installer-elevated_autogen/mocs_compilation.i: delphinos-installer-elevated_autogen/mocs_compilation.cpp.i
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+delphinos-installer-elevated_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinos-installer-elevated_autogen/mocs_compilation.cpp.i
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.cpp.i
+
+delphinos-installer-elevated_autogen/mocs_compilation.s: delphinos-installer-elevated_autogen/mocs_compilation.cpp.s
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+delphinos-installer-elevated_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinos-installer-elevated_autogen/mocs_compilation.cpp.s
+.PHONY : delphinos-installer-elevated_autogen/mocs_compilation.cpp.s
+
 delphinos-installer_autogen/mocs_compilation.o: delphinos-installer_autogen/mocs_compilation.cpp.o
 .PHONY : delphinos-installer_autogen/mocs_compilation.o
 
@@ -224,12 +313,60 @@ delphinos-installer_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/delphinos-installer_autogen/mocs_compilation.cpp.s
 .PHONY : delphinos-installer_autogen/mocs_compilation.cpp.s
 
+delphinosInstallerElevated.o: delphinosInstallerElevated.cpp.o
+.PHONY : delphinosInstallerElevated.o
+
+# target to build an object file
+delphinosInstallerElevated.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinosInstallerElevated.cpp.o
+.PHONY : delphinosInstallerElevated.cpp.o
+
+delphinosInstallerElevated.i: delphinosInstallerElevated.cpp.i
+.PHONY : delphinosInstallerElevated.i
+
+# target to preprocess a source file
+delphinosInstallerElevated.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinosInstallerElevated.cpp.i
+.PHONY : delphinosInstallerElevated.cpp.i
+
+delphinosInstallerElevated.s: delphinosInstallerElevated.cpp.s
+.PHONY : delphinosInstallerElevated.s
+
+# target to generate assembly for a file
+delphinosInstallerElevated.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/delphinosInstallerElevated.cpp.s
+.PHONY : delphinosInstallerElevated.cpp.s
+
+installationPage.o: installationPage.cpp.o
+.PHONY : installationPage.o
+
+# target to build an object file
+installationPage.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/installationPage.cpp.o
+.PHONY : installationPage.cpp.o
+
+installationPage.i: installationPage.cpp.i
+.PHONY : installationPage.i
+
+# target to preprocess a source file
+installationPage.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/installationPage.cpp.i
+.PHONY : installationPage.cpp.i
+
+installationPage.s: installationPage.cpp.s
+.PHONY : installationPage.s
+
+# target to generate assembly for a file
+installationPage.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/installationPage.cpp.s
+.PHONY : installationPage.cpp.s
+
 localizationPage.o: localizationPage.cpp.o
 .PHONY : localizationPage.o
 
 # target to build an object file
 localizationPage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/localizationPage.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/localizationPage.cpp.o
 .PHONY : localizationPage.cpp.o
 
 localizationPage.i: localizationPage.cpp.i
@@ -237,7 +374,7 @@ localizationPage.i: localizationPage.cpp.i
 
 # target to preprocess a source file
 localizationPage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/localizationPage.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/localizationPage.cpp.i
 .PHONY : localizationPage.cpp.i
 
 localizationPage.s: localizationPage.cpp.s
@@ -245,7 +382,7 @@ localizationPage.s: localizationPage.cpp.s
 
 # target to generate assembly for a file
 localizationPage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/localizationPage.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/localizationPage.cpp.s
 .PHONY : localizationPage.cpp.s
 
 main.o: main.cpp.o
@@ -277,7 +414,7 @@ mainWindow.o: mainWindow.cpp.o
 
 # target to build an object file
 mainWindow.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/mainWindow.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/mainWindow.cpp.o
 .PHONY : mainWindow.cpp.o
 
 mainWindow.i: mainWindow.cpp.i
@@ -285,7 +422,7 @@ mainWindow.i: mainWindow.cpp.i
 
 # target to preprocess a source file
 mainWindow.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/mainWindow.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/mainWindow.cpp.i
 .PHONY : mainWindow.cpp.i
 
 mainWindow.s: mainWindow.cpp.s
@@ -293,7 +430,7 @@ mainWindow.s: mainWindow.cpp.s
 
 # target to generate assembly for a file
 mainWindow.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/mainWindow.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/mainWindow.cpp.s
 .PHONY : mainWindow.cpp.s
 
 networkDBus.o: networkDBus.cpp.o
@@ -301,7 +438,7 @@ networkDBus.o: networkDBus.cpp.o
 
 # target to build an object file
 networkDBus.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkDBus.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkDBus.cpp.o
 .PHONY : networkDBus.cpp.o
 
 networkDBus.i: networkDBus.cpp.i
@@ -309,7 +446,7 @@ networkDBus.i: networkDBus.cpp.i
 
 # target to preprocess a source file
 networkDBus.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkDBus.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkDBus.cpp.i
 .PHONY : networkDBus.cpp.i
 
 networkDBus.s: networkDBus.cpp.s
@@ -317,7 +454,7 @@ networkDBus.s: networkDBus.cpp.s
 
 # target to generate assembly for a file
 networkDBus.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkDBus.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkDBus.cpp.s
 .PHONY : networkDBus.cpp.s
 
 networkPage.o: networkPage.cpp.o
@@ -325,7 +462,7 @@ networkPage.o: networkPage.cpp.o
 
 # target to build an object file
 networkPage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkPage.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkPage.cpp.o
 .PHONY : networkPage.cpp.o
 
 networkPage.i: networkPage.cpp.i
@@ -333,7 +470,7 @@ networkPage.i: networkPage.cpp.i
 
 # target to preprocess a source file
 networkPage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkPage.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkPage.cpp.i
 .PHONY : networkPage.cpp.i
 
 networkPage.s: networkPage.cpp.s
@@ -341,39 +478,15 @@ networkPage.s: networkPage.cpp.s
 
 # target to generate assembly for a file
 networkPage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/networkPage.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/networkPage.cpp.s
 .PHONY : networkPage.cpp.s
-
-packagesPage.o: packagesPage.cpp.o
-.PHONY : packagesPage.o
-
-# target to build an object file
-packagesPage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/packagesPage.cpp.o
-.PHONY : packagesPage.cpp.o
-
-packagesPage.i: packagesPage.cpp.i
-.PHONY : packagesPage.i
-
-# target to preprocess a source file
-packagesPage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/packagesPage.cpp.i
-.PHONY : packagesPage.cpp.i
-
-packagesPage.s: packagesPage.cpp.s
-.PHONY : packagesPage.s
-
-# target to generate assembly for a file
-packagesPage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/packagesPage.cpp.s
-.PHONY : packagesPage.cpp.s
 
 partitionPage.o: partitionPage.cpp.o
 .PHONY : partitionPage.o
 
 # target to build an object file
 partitionPage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/partitionPage.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/partitionPage.cpp.o
 .PHONY : partitionPage.cpp.o
 
 partitionPage.i: partitionPage.cpp.i
@@ -381,7 +494,7 @@ partitionPage.i: partitionPage.cpp.i
 
 # target to preprocess a source file
 partitionPage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/partitionPage.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/partitionPage.cpp.i
 .PHONY : partitionPage.cpp.i
 
 partitionPage.s: partitionPage.cpp.s
@@ -389,8 +502,32 @@ partitionPage.s: partitionPage.cpp.s
 
 # target to generate assembly for a file
 partitionPage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer.dir/build.make CMakeFiles/delphinos-installer.dir/partitionPage.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/partitionPage.cpp.s
 .PHONY : partitionPage.cpp.s
+
+usersPage.o: usersPage.cpp.o
+.PHONY : usersPage.o
+
+# target to build an object file
+usersPage.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/usersPage.cpp.o
+.PHONY : usersPage.cpp.o
+
+usersPage.i: usersPage.cpp.i
+.PHONY : usersPage.i
+
+# target to preprocess a source file
+usersPage.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/usersPage.cpp.i
+.PHONY : usersPage.cpp.i
+
+usersPage.s: usersPage.cpp.s
+.PHONY : usersPage.s
+
+# target to generate assembly for a file
+usersPage.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/delphinos-installer-elevated.dir/build.make CMakeFiles/delphinos-installer-elevated.dir/usersPage.cpp.s
+.PHONY : usersPage.cpp.s
 
 # Help Target
 help:
@@ -404,12 +541,26 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... copy_stylesheet"
+	@echo "... copy_system_files"
+	@echo "... delphinos-installer-elevated_autogen"
+	@echo "... delphinos-installer-elevated_autogen_timestamp_deps"
 	@echo "... delphinos-installer_autogen"
 	@echo "... delphinos-installer_autogen_timestamp_deps"
 	@echo "... delphinos-installer"
+	@echo "... delphinos-installer-elevated"
+	@echo "... delphinos-installer-elevated_autogen/mocs_compilation.o"
+	@echo "... delphinos-installer-elevated_autogen/mocs_compilation.i"
+	@echo "... delphinos-installer-elevated_autogen/mocs_compilation.s"
 	@echo "... delphinos-installer_autogen/mocs_compilation.o"
 	@echo "... delphinos-installer_autogen/mocs_compilation.i"
 	@echo "... delphinos-installer_autogen/mocs_compilation.s"
+	@echo "... delphinosInstallerElevated.o"
+	@echo "... delphinosInstallerElevated.i"
+	@echo "... delphinosInstallerElevated.s"
+	@echo "... installationPage.o"
+	@echo "... installationPage.i"
+	@echo "... installationPage.s"
 	@echo "... localizationPage.o"
 	@echo "... localizationPage.i"
 	@echo "... localizationPage.s"
@@ -425,12 +576,12 @@ help:
 	@echo "... networkPage.o"
 	@echo "... networkPage.i"
 	@echo "... networkPage.s"
-	@echo "... packagesPage.o"
-	@echo "... packagesPage.i"
-	@echo "... packagesPage.s"
 	@echo "... partitionPage.o"
 	@echo "... partitionPage.i"
 	@echo "... partitionPage.s"
+	@echo "... usersPage.o"
+	@echo "... usersPage.i"
+	@echo "... usersPage.s"
 .PHONY : help
 
 

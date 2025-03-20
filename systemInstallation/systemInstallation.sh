@@ -10,11 +10,6 @@ trap 'echo "Script interrupted. Cleaning up..."; chroot_teardown; exit 1' SIGINT
 
 packages=("$@")
 
-if [ ${#packages[@]} -eq 0 ]; then
-    echo "No packages provided."
-    exit 1
-fi
-
 newroot="/mnt/new_root"
 
 installationProcedureList=(

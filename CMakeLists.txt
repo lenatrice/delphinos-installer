@@ -55,6 +55,7 @@ add_custom_target(copy_system_files
 
 add_dependencies(delphinos-installer-elevated copy_system_files)
 
+
 # Include directories for the elevated executable
 target_include_directories(delphinos-installer-elevated PRIVATE
     ${GLIB_INCLUDE_DIRS}
@@ -85,54 +86,41 @@ target_link_libraries(delphinos-installer-elevated PRIVATE
 # Calculate the checksums of the script before compiling
 find_program(SHA256SUM "shasum")
 
-if(SHA256SUM)
-    message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+set(CHECKSUM_SYSTEM_INSTALLATION "UNKNOWN")
+set(CHECKSUM_INSTALL_PACKAGES "UNKNOWN")
+set(CHECKSUM_COMMON "UNKNOWN")
 
-    execute_process(
-        COMMAND ${SHA256SUM} -a 256 ${CMAKE_SOURCE_DIR}/systemInstallation/systemInstallation.sh
-        RESULT_VARIABLE result
-        OUTPUT_VARIABLE checksumSystemInstallation
-        ERROR_VARIABLE error
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-    string(REGEX REPLACE " .*" "" checksumSystemInstallation "${checksumSystemInstallation}")
-
-    execute_process(
-        COMMAND ${SHA256SUM} -a 256 ${CMAKE_SOURCE_DIR}/systemInstallation/installPackages.sh
-        RESULT_VARIABLE result
-        OUTPUT_VARIABLE checksumInstallPackages
-        ERROR_VARIABLE error
-    )
-
-    string(REGEX REPLACE " .*" "" checksumInstallPackages "${checksumInstallPackages}")
-
-    execute_process(
-        COMMAND ${SHA256SUM} -a 256 ${CMAKE_SOURCE_DIR}/systemInstallation/common
-        RESULT_VARIABLE result
-        OUTPUT_VARIABLE checksumCommon
-        ERROR_VARIABLE error
-    )
-
-    string(REGEX REPLACE " .*" "" checksumCommon "${checksumCommon}")
-
-    set(CHECKSUM_SYSTEM_INSTALLATION ${checksumSystemInstallation})
-    set(CHECKSUM_INSTALL_PACKAGES ${checksumInstallPackages})
-    set(CHECKSUM_COMMON ${checksumCommon})
-
-    target_compile_definitions(delphinos-installer-elevated PUBLIC
-        SYSTEM_INSTALLATION_CHECKSUM="${CHECKSUM_SYSTEM_INSTALLATION}"
-        INSTALL_PACKAGES_CHECKSUM="${CHECKSUM_INSTALL_PACKAGES}"
-        COMMON_CHECKSUM="${CHECKSUM_COMMON}"
-    )
-    
-    # Print the checksums to verify
-    message(STATUS "Checksum for systemInstallation.sh: ${checksumSystemInstallation}")
-    message(STATUS "Checksum for installPackages.sh: ${checksumInstallPackages}")
-    message(STATUS "Checksum for common: ${checksumCommon}")
-    
+macro(CALCULATE_CHECKSUM FILE_VAR FILE_PATH)
+    if(EXISTS "${FILE_PATH}")
+        execute_process(
+            COMMAND ${SHA256SUM} -a 256 "${FILE_PATH}"
+            OUTPUT_VARIABLE output
+            ERROR_VARIABLE error
+            RESULT_VARIABLE result
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if(result EQUAL 0)
+            string(REGEX REPLACE " .*" "" ${FILE_VAR} "${output}")
+        else()
+            message(WARNING "Failed to calculate checksum for ${FILE_PATH}: ${error}")
+        endif()
     else()
-    message(FATAL_ERROR "shasum não encontrado no seu sistema!")
-endif()
+        message(WARNING "File not found: ${FILE_PATH}")
+    endif()
+endmacro()
 
-# Install the executable (optional)
-install(TARGETS delphinos-installer DESTINATION build)
+CALCULATE_CHECKSUM(CHECKSUM_SYSTEM_INSTALLATION "${CMAKE_SOURCE_DIR}/systemInstallation/systemInstallation.sh")
+CALCULATE_CHECKSUM(CHECKSUM_INSTALL_PACKAGES "${CMAKE_SOURCE_DIR}/systemInstallation/installPackages.sh")
+CALCULATE_CHECKSUM(CHECKSUM_COMMON "${CMAKE_SOURCE_DIR}/systemInstallation/common")
+
+target_compile_definitions(delphinos-installer-elevated PUBLIC
+    SYSTEM_INSTALLATION_CHECKSUM="${CHECKSUM_SYSTEM_INSTALLATION}"
+    INSTALL_PACKAGES_CHECKSUM="${CHECKSUM_INSTALL_PACKAGES}"
+    COMMON_CHECKSUM="${CHECKSUM_COMMON}"
+)
+
+message(STATUS "systemInstallation.sh script checksum: ${CHECKSUM_SYSTEM_INSTALLATION}")
+message(STATUS "installPackages.sh script checksum: ${CHECKSUM_INSTALL_PACKAGES}")
+message(STATUS "common script checksum: ${CHECKSUM_COMMON}")
+
+install(TARGETS delphinos-installer-elevated DESTINATION build)

@@ -35,8 +35,6 @@ UsersPage::UsersPage(QWidget* parent) : QWidget(parent)
     
     // Root user password
     QHBoxLayout* rootLabelLayout = new QHBoxLayout;
-    rootLabelIndicator = new StatusIndicator;
-    rootLabelIndicator->hide();
     rootLabel = new QLabel("<b>Usuário root</b>\n(possui controle irrestrito sobre o sistema)");
     rootLabel->setWordWrap(true);
     rootLabelLayout->addWidget(rootLabel);
@@ -67,8 +65,6 @@ UsersPage::UsersPage(QWidget* parent) : QWidget(parent)
     
     // User configuration
     QHBoxLayout* userLabelLayout = new QHBoxLayout;
-    userLabelIndicator = new StatusIndicator;
-    userLabelIndicator->hide();
     userLabel = new QLabel("<b>Crie o seu usuário</b>");
     userLabelLayout->addWidget(userLabel);
     userFormLayout->addRow(userLabelLayout);
@@ -106,7 +102,6 @@ UsersPage::UsersPage(QWidget* parent) : QWidget(parent)
 
 
     
-    
     // Confirmation button
     confirmButton = new QPushButton("Confirmar");
     connect(confirmButton, &QPushButton::clicked, this, &UsersPage::onConfirmButtonClicked);
@@ -118,6 +113,11 @@ void UsersPage::onRootPasswordConfirmLineChanged(const QString& text)
     QTimer* timer = new QTimer;
     timer->start(3500);
     connect(timer, &QTimer::timeout, this, [this](){
+        if (rootPasswordConfirmLineEdit->text().isEmpty())
+        {
+            rootPasswordsMatchIndicator->setStatus(StatusIndicator::None);
+            rootPasswordsMatchLabel->hide();
+        }
         if (rootPasswordLineEdit->text() != rootPasswordConfirmLineEdit->text())
         {
             rootPasswordsMatchIndicator->setStatus(StatusIndicator::Error);
@@ -135,6 +135,12 @@ void UsersPage::onUserPasswordConfirmLineChanged(const QString& text)
     QTimer* timer = new QTimer;
     timer->start(3500);
     connect(timer, &QTimer::timeout, this, [this](){
+        if (userPasswordConfirmLineEdit->text().isEmpty())
+        {
+            userPasswordsMatchIndicator->setStatus(StatusIndicator::None);
+            userPasswordsMatchLabel->hide();
+        }
+
         if (userPasswordLineEdit->text() != userPasswordConfirmLineEdit->text())
         {
             userPasswordsMatchIndicator->setStatus(StatusIndicator::Error);
@@ -143,13 +149,15 @@ void UsersPage::onUserPasswordConfirmLineChanged(const QString& text)
         } else {
             userPasswordsMatchLabel->hide();
             userPasswordsMatchIndicator->setStatus(StatusIndicator::Ok);
-        }
+        } 
     });
 }
 
 void UsersPage::onConfirmButtonClicked(bool checked)
 {
     const QString& username = usernameLineEdit->text();
+    const QString& rootPassword = rootPasswordLineEdit->text();
+    const QString& userPassword = userPasswordLineEdit->text();
 
     const QList<QString> invalidUsernames = QList<QString>
     {
@@ -164,7 +172,7 @@ void UsersPage::onConfirmButtonClicked(bool checked)
 
     if (username.isEmpty())
     {
-        QMessageBox::critical(this, "Erro", "Seu nome de usuário está vazio.", QMessageBox::StandardButton::Ok);
+        QMessageBox::critical(this, "Erro", "O nome de usuário está vazio.", QMessageBox::StandardButton::Ok);
         return;
     }
 
@@ -180,38 +188,39 @@ void UsersPage::onConfirmButtonClicked(bool checked)
         return;
     }
 
-    QRegularExpression regex("^[a-z_][a-z0-9_-]{0,31}$");
+    QRegularExpression regex("^[a-z_][a-z0-9_-]");
     if (!regex.match(username).hasMatch()) {
-        QMessageBox::critical(this, "Erro", "Nome de usuário inválido. Use apenas letras minúsculas, números, '-', '_' e '.', e siga as regras de nomeação.", QMessageBox::StandardButton::Ok);
+        QMessageBox::critical(this, "Erro", "Nome de usuário inválido. Use apenas letras minúsculas, números, '-' e '_'.", QMessageBox::StandardButton::Ok);
         return;
     }
 
     if (isGroupNameUsed(username))
     {
-
+        QMessageBox::critical(this, "Erro", "Já existe um grupo de usuários utilizando o nome \"" + username + "\". Por favor, escolha outro nome de usuário.", QMessageBox::StandardButton::Ok);
+        return;
     }
 
-    if (rootPasswordLineEdit->text() != rootPasswordConfirmLineEdit->text())
+    if (rootPassword != rootPasswordConfirmLineEdit->text())
     {
         QMessageBox::critical(this, "Erro", "As senhas para root não conferem.", QMessageBox::StandardButton::Ok);
         return;
     }
 
-    if (userPasswordLineEdit->text() != userPasswordConfirmLineEdit->text())
+    if (userPassword != userPasswordConfirmLineEdit->text())
     {
-        QMessageBox::critical(this, "Erro", "As senhas para o usuário " + usernameLineEdit->text() + " não conferem.", QMessageBox::StandardButton::Ok);
+        QMessageBox::critical(this, "Erro", "As senhas para o usuário " + username + " não conferem.", QMessageBox::StandardButton::Ok);
         return;
     }
 
-    QPointer<QMessageBox> confirmationDialog = new QMessageBox;
-    confirmationDialog->setWindowTitle("Confirme o seu usuário");
+    QMessageBox confirmationDialog;
+    confirmationDialog.setWindowTitle("Confirme o seu usuário");
     grantUserAdministrativePrivileges->isChecked() ?
-        confirmationDialog->setText("Criar usuário <b>" + username + "</b> <i>com privilégios administrativos</i>?")
-        : confirmationDialog->setText("Criar usuário <b>" + username + "</b> <i>sem privilégios administrativos</i>?");
+        confirmationDialog.setText("Criar usuário <b>" + username + "</b> <i>com privilégios administrativos</i>?")
+        : confirmationDialog.setText("Criar usuário <b>" + username + "</b> <i>sem privilégios administrativos</i>?");
 
-    confirmationDialog->setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::Cancel);
+    confirmationDialog.setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::Cancel);
 
-    if (confirmationDialog->exec() != QMessageBox::Ok)
+    if (confirmationDialog.exec() != QMessageBox::Ok)
     {
         return;
     } else {
@@ -222,13 +231,14 @@ void UsersPage::onConfirmButtonClicked(bool checked)
 
         QProcess* configureUsersProcess = new QProcess;
         QStringList arguments;
-        arguments << "chroot" << "/mnt/new_root" << "/bin/bash" << "-c"
+        arguments << "/mnt/new_root" << "/bin/bash" << "-c"
                   << "echo root:" + rootPassword + " | chpasswd; "
                      "useradd -m " + username + "; "
                      "echo " + username + ":" + userPassword + " | chpasswd; "
-                     + (grantUserAdministrativePrivileges->isChecked() ? "usermod -aG wheel " + username + ";" : "");
+                     + (grantUserAdministrativePrivileges->isChecked() ? "usermod -aG wheel " + username + ";" : "")
+                     + "exit;";
 
-        configureUsersProcess->start("pkexec", arguments);
+        configureUsersProcess->start("chroot", arguments);
 
         connect(configureUsersProcess, &QProcess::readyReadStandardOutput, this, [configureUsersProcess]() {
             qDebug() << configureUsersProcess->readAllStandardOutput();
@@ -239,26 +249,21 @@ void UsersPage::onConfirmButtonClicked(bool checked)
         });
 
         connect(configureUsersProcess, &QProcess::finished, this, [this, username](int exitCode, QProcess::ExitStatus processStatus){
-            rootLabelIndicator->show();
-            userLabelIndicator->show();
             if (exitCode != 0 || processStatus == QProcess::ExitStatus::CrashExit)
             {
                 QMessageBox::critical(this, "Erro", "Não foi possível configurar os usuários.", QMessageBox::Ok);
-                rootLabelIndicator->setStatus(StatusIndicator::Error);
-                userLabelIndicator->setStatus(StatusIndicator::Error);
                 return;
             } else {
-                rootFormLayout->removeRow(rootPasswordLineEdit);
-                rootFormLayout->removeRow(rootPasswordConfirmLineEdit);
-                page->removeLayout(rootPasswordsMatchLayout);
-                userFormLayout->removeRow(userPasswordLineEdit);
-                userFormLayout->removeRow(userPasswordConfirmLineEdit);
-                page->removeLayout(userPasswordsMatchLayout);
+                
+                rootPasswordLineEdit->setEnabled(false);
+                rootPasswordConfirmLineEdit->setEnabled(false);
 
-                rootLabelIndicator->setStatus(StatusIndicator::Ok);;
-                rootLabel->setText("Usuário <b>root</b> configurado com sucesso");
+                usernameLineEdit->setEnabled(false);
+                userPasswordLineEdit->setEnabled(false);
+                userPasswordConfirmLineEdit->setEnabled(false);
+                grantUserAdministrativePrivileges->setEnabled(false);
 
-                userLabelIndicator->setStatus(StatusIndicator::Ok);
+
                 if (grantUserAdministrativePrivileges->isChecked())
                 {
                     userLabel->setText("Usuário <b>" + username + "</b> criado com sucesso com privilégios administrativos");

@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QStringList>
 #include <QStyleFactory>
 #include <QStyleHints>
+#include <QLoggingCategory>
 #include <QFile>
 #include <unistd.h>
 #include <sys/types.h>
@@ -31,10 +32,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 int main(int argc, char **argv)
 {
     qDebug() << "Running delphinos-installer-elevated";
-
-    QProcess echoEnv;
-    QStringList echoArgs;
-    echoEnv.start("echo", echoArgs);
+    qputenv("QT_QPA_PLATFORMTHEME", "qt6ct");
+    QLoggingCategory::setFilterRules("qt.text.font.db=false");
 
     // Now the program is running as user 'delphinos-installer'
     QApplication app(argc, argv);
@@ -48,7 +47,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    app.setStyle("Breeze");
+    app.setStyle("qt6ct-style");
 
     // Create a dark palette
     QPalette darkPalette;
@@ -69,45 +68,18 @@ int main(int argc, char **argv)
 
     app.setPalette(darkPalette);
 
+    QString styleSheet;
+    
+    QFile file(QApplication::applicationDirPath() + "/styleSheet.qss");
+    if (file.open(QFile::ReadOnly | QFile::Text)) {
+        QTextStream stream(&file);
+        styleSheet = stream.readAll();
+    } else {
+        qWarning() << "Failed to open QSS file: " << QApplication::applicationDirPath() + "/styleSheet.qss";
+    }
+    
     MainWindow window;
-
-    window.setStyleSheet(
-        "QLineEdit {"
-        "  border: 1px solid rgb(72, 80, 90);" // Dark border color for text edit
-        "  background-color: #272933;"  // Text area background
-        "  color: rgb(199, 206, 217);"             // Text color inside text area
-        "  border-radius: 2px;"            // Rounded corners for button
-        "  height: 24px;"                        // Adjust the height of the text box"
-        "}"
-        "QLineEdit:focus {"
-        "  border: 1px solid rgb(55, 142, 255);" 
-        "  background-color:rgb(67, 70, 85);"            // Background when focused
-        "  color: rgb(199, 206, 217);"           // Text color when focused
-        "  border-radius: 2px;"                   // Rounded corners for button
-        "}"
-        "QLineEdit:selected {"
-        "  border: 1px solid rgb(55, 142, 255);" // Dark border color for text edit
-        "  background-color: #272933;"  // Text area background
-        "  color: rgb(199, 206, 217);"             // Text color inside text area
-        "  border-radius: 2px;"            // Rounded corners for button
-        "}"
-        "QListWidget {"
-        "  border: 1px solid rgb(72, 80, 90);"
-        "  border-radius: 2px;"            // Rounded corners for button
-        "}"
-        "QListWidget::item:selected {"
-        "  background-color: rgb(55, 142, 255);"   // Background color when an item is selected
-        "  color: #fff;"                          // Text color when an item is selected
-        "}"
-        "QTableWidget {"
-        "  border: 1px solid rgb(72, 80, 90);"
-        "  border-radius: 2px;"            // Rounded corners for button
-        "}"
-        "QTableWidget::item:selected {"
-        "  background-color: 1px solid rgb(55, 142, 255);"  
-        "  padding: 0px;"                        // Padding for list items
-        "}"
-    );
+    //window.setStyleSheet(styleSheet);
     window.show();
 
     return app.exec();

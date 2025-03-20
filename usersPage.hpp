@@ -29,17 +29,15 @@ private:
     QTimer* passwordCheckTimer = nullptr;
 
     // Root user password
-    StatusIndicator* rootLabelIndicator;
     QLabel* rootLabel;
     QLineEdit* rootPasswordLineEdit;
     QLineEdit* rootPasswordConfirmLineEdit;
     QHBoxLayout* rootPasswordsMatchLayout;
     StatusIndicator* rootPasswordsMatchIndicator;
     QLabel* rootPasswordsMatchLabel;
-
+    bool rootPasswordsMatch = false;
 
     // User configuration
-    StatusIndicator* userLabelIndicator;
     QLabel* userLabel;
     QLineEdit* usernameLineEdit;
     QLineEdit* userPasswordLineEdit;
@@ -47,6 +45,7 @@ private:
     QHBoxLayout* userPasswordsMatchLayout;
     StatusIndicator* userPasswordsMatchIndicator;
     QLabel* userPasswordsMatchLabel;
+    bool userPasswordsMatch = false;
 
     QCheckBox* grantUserAdministrativePrivileges;
 

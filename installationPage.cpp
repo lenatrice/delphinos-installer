@@ -30,12 +30,10 @@ QString calculateFileChecksum(const QString &filePath) {
         return QString();
     }
 
-    // Use SHA256 as an example hash function
     QCryptographicHash hash(QCryptographicHash::Sha256);
 
-    // Read the file in chunks to avoid memory overload with large files
     while (!file.atEnd()) {
-        QByteArray chunk = file.read(1024); // Read in chunks of 1024 bytes
+        QByteArray chunk = file.read(1024);
         hash.addData(chunk);
     }
 
@@ -51,30 +49,84 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
     );
     page->setCanAdvance(false);
 
+    QVBoxLayout* securityWarningLayout = nullptr;
+
+    QWidget* securityWarningTitleWidget = nullptr;
+    QHBoxLayout* securityWarningTitleLayout = nullptr;
+    StatusIndicator* securityWarningIndicator = nullptr;
+    QLabel* securityWarningTitle = nullptr;
+
+    QLabel* securityWarningMessage = nullptr;
+
     // Verify the scripts checksum for security
+    bool fileIntegrityFailed = false;
+
     QString systemInstallationScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/systemInstallation.sh");
     QString installPackagesScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/installPackages.sh");
     QString commonScriptChecksum = calculateFileChecksum(QApplication::applicationDirPath() + "/systemInstallation/common");
 
-    if (systemInstallationScriptChecksum != SYSTEM_INSTALLATION_CHECKSUM)
-    {
-        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"systemInstallation.sh\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
-        return;
-    }
+    QMap<QString, bool> scriptIntegrityMap = QMap<QString, bool> {
+        { "systemInstallation.sh", systemInstallationScriptChecksum == SYSTEM_INSTALLATION_CHECKSUM },
+        { "installPackages.sh", installPackagesScriptChecksum == INSTALL_PACKAGES_CHECKSUM },
+        { "common", commonScriptChecksum == COMMON_CHECKSUM }
+    };
 
-    if (installPackagesScriptChecksum != INSTALL_PACKAGES_CHECKSUM)
-    {
-        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"installPackages.sh\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
-        return;
-    }
+    QStringList mismatchedScriptsList;
 
-    if (commonScriptChecksum != COMMON_CHECKSUM)
+    for (auto pair = scriptIntegrityMap.begin(); pair != scriptIntegrityMap.end(); pair++)
     {
-        QMessageBox::critical(this, "Erro", "A verificação de integridade do script \"common\" falhou. Ele pode ter sido modificado ou corrompido.", QMessageBox::Ok);
+        if (!pair.value())
+        {
+            mismatchedScriptsList.push_back(pair.key());
+        }
+    };
+
+    if (!mismatchedScriptsList.isEmpty())
+    {
+        securityWarningTitleLayout = new QHBoxLayout;
+        securityWarningTitleLayout->setAlignment(Qt::AlignHCenter);
+
+        securityWarningIndicator = new StatusIndicator;
+        securityWarningIndicator->setStatus(StatusIndicator::Error);
+
+        securityWarningTitle = new QLabel("<span style=\"color:red; font-weight:bold\">Erro</span><br>");
+        securityWarningTitle->setFixedHeight(securityWarningIndicator->size().height());
+
+        securityWarningTitleLayout->addWidget(securityWarningIndicator, 0, Qt::AlignHCenter);
+        securityWarningTitleLayout->addWidget(securityWarningTitle, 0, Qt::AlignHCenter);
+
+        securityWarningMessage = new QLabel;
+
+        if (mismatchedScriptsList.count() > 1)
+        {
+            securityWarningMessage->setText(
+                "As verificações de integridade dos seguintes scripts falharam:\n" +
+                mismatchedScriptsList.join("\n") +
+                "\nEles podem ter sido modificados ou corrompidos. Por razão de segurança, você não poderá prosseguir com a instalação."
+            );
+        }
+        else
+        {
+            securityWarningMessage->setText(
+                "A verificação de integridade do seguinte script falhou:\n\"" +
+                mismatchedScriptsList.first() +
+                "\"\nEle pode ter sido modificado ou corrompido. Por razão de segurança, você não poderá prosseguir com a instalação."
+            );
+        }
+
+        securityWarningMessage->setAlignment(Qt::AlignHCenter);
+        securityWarningMessage->setWordWrap(true);
+        securityWarningMessage->setFixedSize(page->getSize().width(), securityWarningMessage->sizeHint().height()); // Allow it to expand as needed
+        
+        page->addLayout(securityWarningTitleLayout);
+        page->addWidget(securityWarningMessage, 0, Qt::AlignHCenter);
+        page->addStretch();
         return;
-    }
+    };
 
     formLayout = new QFormLayout;
+
+    // Create the package selection list widget
     QHBoxLayout* packageSelectionLayout = new QHBoxLayout;
     packageListWidget = new QListWidget;
     packageListWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -87,7 +139,7 @@ InstallationPage::InstallationPage(QWidget* parent) : QWidget(parent)
         packageDescription[0] = packageDescription[0].toUpper();
         QListWidgetItem* item = new QListWidgetItem(packageDescription);
         item->setData(packageNameRole, it.key());
-        item->setFlags(Qt::ItemIsUserCheckable);
+        item->setFlags(item->flags() & ~Qt::ItemIsUserCheckable & ~Qt::ItemIsEnabled);
         item->setCheckState(Qt::Checked);
         packageListWidget->addItem(item);
         processLabels.insert(it.key(), it.value());
@@ -260,27 +312,16 @@ void InstallationPage::onInstallBasicAndOptionalButtonClicked(bool checked)
     connect(packageListWidget, &QListWidget::itemChanged, this, &InstallationPage::onPackageListChanged);
 }
 
-
-
-/*const QString SYSTEM_INSTALLATION_CHECKSUM = QString::fromUtf8(SYSTEM_INSTALLATION_CHECKSUM);
-const QString INSTALL_PACKAGES_CHECKSUM = QString::fromUtf8(INSTALL_PACKAGES_CHECKSUM);
-const QString COMMON_CHECKSUM = QString::fromUtf8(COMMON_CHECKSUM);*/
-
 void InstallationPage::onInstallSystemButtonClicked(bool checked)
 {
-    #ifdef SYSTEM_INSTALLATION_CHECKSUM
-        qDebug() << "SYSTEM_INSTALLATION_CHECKSUM defined!";
-    #else
-        qDebug() << "SYSTEM_INSTALLATION_CHECKSUM not defined!";
-        exit;
-    #endif
+    installSystemButton->setEnabled(false);
 
     QStringList installationScriptCommand;
     installationScriptCommand.append(QApplication::applicationDirPath() + "/systemInstallation/systemInstallation.sh");
     installationScriptCommand.append(getSelectedPackages());
 
     installationProcess = new QProcess;
-    installationProcess->start("pkexec", QStringList() << "/bin/bash" << installationScriptCommand);
+    installationProcess->start("/bin/bash", installationScriptCommand);
 
     connect(installationProcess, &QProcess::started, this, [this](){
         installationProgressBar->show();
@@ -403,6 +444,7 @@ void InstallationPage::onInstallSystemButtonClicked(bool checked)
         installationProcess->deleteLater();
         if (exitStatus == QProcess::CrashExit || exitCode != 0) {
             qDebug() << "System installation process failed";
+            installSystemButton->setEnabled(true);
             installationStatusIndicator->setStatus(StatusIndicator::Error);
             if (!installationErrorLabel.isEmpty())
             {

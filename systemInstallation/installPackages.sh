@@ -22,7 +22,7 @@ echo "Installation finished successfully"
 # Detect if system is UEFI or BIOS and install the bootloader accordingly
 if [ -d /sys/firmware/efi ]; then
     setInstallationProgress "INSTALLING:UEFI bootloader:"
-    grub-install --target=x86_64-efi --efi-directory=/boot 
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="New_DelphinOS"
     if [ $? -ne 0 ]; then
         echo "ERROR:could not install UEFI bootloader"
         exit 2
@@ -65,6 +65,5 @@ setInstallationProgress "ACTIVATING:iwd:"
 systemctl enable iwd
 setInstallationProgress "ACTIVATING:sddm:"
 systemctl enable sddm
-
 
 exit 0

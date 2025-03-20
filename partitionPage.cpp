@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QProcess>
 #include <QLineEdit>
 #include <cmath>
+#include <QDir>
 
 Q_DECLARE_METATYPE(Device*);
 
@@ -913,8 +914,8 @@ void PartitionPage::onCreateSystemPartitionsButtonClicked(bool checked)
     newRootPartition->setLabel("DelphinOS Root Partition");
     newRootPartition->setMountPoint("/mnt/new_root");
 
-    NewOperation* createBootPartition = new NewOperation(*device, newBootPartition);
     NewOperation* createRootPartition = new NewOperation(*device, newRootPartition);
+    NewOperation* createBootPartition = new NewOperation(*device, newBootPartition);
 
     if (!createBootPartition->canCreateNew(partition))
     {
@@ -937,11 +938,37 @@ void PartitionPage::onCreateSystemPartitionsButtonClicked(bool checked)
 
     runOperations();
 
-    newBootFs->create(*rootReport, bootDeviceNode);
     newRootFs->create(*rootReport, rootDeviceNode);
+    newBootFs->create(*rootReport, bootDeviceNode);
+
+    if (!QDir("/mnt/new_root").exists()) {
+        if (!QDir().mkpath("/mnt/new_root")) {
+            qWarning() << "Failed to create mountpoint: /mnt/new_root";
+            return;
+        }
+    }
+    
+    newRootPartition->mount(*rootReport);
+
+    qDebug() << "Mountpoint created: /mnt/new_root";
+
+    if (!QDir("/mnt/new_root/boot").exists()) {
+        if (!QDir().mkpath("/mnt/new_root/boot")) {
+            qWarning() << "Failed to create mountpoint: /mnt/new_root/boot";
+            return;
+        }
+    }
+
+    if (!QDir("/mnt/new_root/boot").exists()) {
+        if (!QDir().mkpath("/mnt/new_root/boot")) {
+            qWarning() << "Failed to create mountpoint: /mnt/new_root/boot";
+            return;
+        }
+    }
+
+    qDebug() << "Mountpoint created: /mnt/new_root/boot";
 
     newBootPartition->mount(*rootReport);
-    newRootPartition->mount(*rootReport);
 
     updatePartitionTable();
 

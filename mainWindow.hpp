@@ -39,6 +39,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "networkDBus.hpp"
 #include <QString>
 #include <QFile>
+#include <QTextLayout>
 
 class PageContent;
 
@@ -123,9 +124,9 @@ struct PageDescription : public QLabel
     }
     explicit PageDescription(const QString text, QWidget* parent = nullptr) : QLabel(parent) {
         setWordWrap(true);
+        setText(text);
         setAlignment(Qt::AlignHCenter | Qt::AlignTop);
         setStyleSheet("font-weight: regular; " + color + " font-size: 12px");
-        setText(text);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
 };
@@ -135,9 +136,8 @@ class PageContent : public QWidget
 Q_OBJECT
 private:
     QVBoxLayout* layout;
-    QVBoxLayout* topLayout;
-    PageTitle* title;
-    PageDescription* description;
+    QLabel* title;
+    QLabel* description;
     QSize pageSize;
 
     // Whether next button is clickable to advance the page. By default, canAdvance is true.
@@ -158,18 +158,23 @@ public:
         pageSize = QSize(width, height);
 
         layout = new QVBoxLayout(this);
-        topLayout = new QVBoxLayout;
         
-        title = new PageTitle(_title, this);
-        topLayout->addWidget(title, 0, Qt::AlignTop);
-        
-        description = new PageDescription(_description, this);
-        topLayout->addWidget(description, 0, Qt::AlignTop);
-        
-        layout->addLayout(topLayout);
-        layout->setAlignment(Qt::AlignLeft);
+        title = new QLabel(_title, this);
+        title->setStyleSheet("font-weight: bold; color: rgb(30, 100, 255); font-size: 24px");
+        title->setAlignment(Qt::AlignHCenter);
+        title->setWordWrap(true);
 
-        layout->addSpacing(20);
+        layout->addWidget(title);
+        
+        description = new QLabel(_description, this);
+        description->setStyleSheet("font-weight: regular; color:rgb(60, 138, 255); font-size: 12px");
+
+        description->setAlignment(Qt::AlignHCenter);
+        description->setWordWrap(true);
+
+        layout->addWidget(description);
+
+        layout->addStretch();
     }
 
     ~PageContent() override = default;
@@ -189,12 +194,7 @@ public:
         layout->addStretch();
     }
 
-    void addWidget(QWidget* widget)
-    {   
-        layout->addWidget(widget, 0, Qt::AlignLeft);
-    }
-
-    void addWidget(QWidget* widget, int stretch, Qt::Alignment alignment)
+    void addWidget(QWidget* widget, int stretch = 0, Qt::Alignment alignment = Qt::AlignLeft | Qt::AlignTop)
     {
         layout->addWidget(widget, stretch, alignment);
     }
@@ -219,12 +219,12 @@ public:
         return pageSize;
     }
 
-    const PageTitle& getTitle()
+    const QLabel& getTitle()
     {
         return *title;
     };
 
-    const PageDescription& getDescription()
+    const QLabel& getDescription()
     {
         return *description;
     };

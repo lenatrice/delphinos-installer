@@ -1,0 +1,14 @@
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer-elevated.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/copy_system_files.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/copy_stylesheet.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/edit_cache.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/rebuild_cache.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/list_install_components.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/install.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/install/local.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/install/strip.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer_autogen_timestamp_deps.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer_autogen.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer-elevated_autogen_timestamp_deps.dir
+/home/lena/Projects/delphinos-installer/CMakeFiles/delphinos-installer-elevated_autogen.dir
