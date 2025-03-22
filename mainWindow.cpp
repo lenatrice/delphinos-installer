@@ -63,17 +63,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     mainLayout->addWidget(pageStack, 0, Qt::AlignTop);
     
-    InstallationPage* installationPage = new InstallationPage(this);
-    pageList.append(installationPage->getPage());
-    
     LocalizationPage* localizationPage = new LocalizationPage(this);
     pageList.append(localizationPage->getPage());
     
     NetworkPage* networkPage = new NetworkPage(this);
     pageList.append(networkPage->getPage());
-
+    
     PartitionPage* partitionPage = new PartitionPage(this);
     pageList.append(partitionPage->getPage());
+    
+    InstallationPage* installationPage = new InstallationPage(this);
+    pageList.append(installationPage->getPage());
+    
     
     UsersPage* usersPage = new UsersPage(this);
     pageList.append(usersPage->getPage());

@@ -1,0 +1,14 @@
+pkgname=delphinos-release
+pkgver=1.0
+pkgrel=1
+pkgdesc="Release package for DelphinOS"
+arch=('any')
+provides=('os-release')
+conflicts=('os-release')
+replaces=('os-release')
+backup=('usr/lib/os-release')
+license=('GPL')
+
+package() {
+    install -Dm644 "$srcdir/os-release" "$pkgdir/usr/lib/os-release"
+}
